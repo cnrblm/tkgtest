@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python 101</title>
+<meta name="description" content="Yazılım Kalite Güvencesi ve Testi dersi için temel Python: ilk satırdan listelere, assert ile ilk testler.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+:root{
+  --bg:#F6F7F9;
+  --surface:#FFFFFF;
+  --ink:#1A2130;
+  --muted:#586274;
+  --line:#DDE1E8;
+  --accent:#B8430F;
+  --accent-soft:#FBEDE6;
+  --code-bg:#1C2331;
+  --code-ink:#E6E9EF;
+  --code-dim:#8B95A7;
+  --ok:#1E7A4C;
+  --ok-soft:#E4F3EA;
+  --warn-soft:#FFF4DB;
+  --warn-ink:#7A5200;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#12161E; --surface:#1A1F29; --ink:#E7EAF0; --muted:#9AA3B3; --line:#2C3340;
+    --accent:#F08A5D; --accent-soft:#2E2019; --code-bg:#0C1017; --code-ink:#E6E9EF; --code-dim:#7D8799;
+    --ok:#5CC48E; --ok-soft:#17291F; --warn-soft:#2C2412; --warn-ink:#E8C06A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#12161E; --surface:#1A1F29; --ink:#E7EAF0; --muted:#9AA3B3; --line:#2C3340;
+  --accent:#F08A5D; --accent-soft:#2E2019; --code-bg:#0C1017; --code-ink:#E6E9EF; --code-dim:#7D8799;
+  --ok:#5CC48E; --ok-soft:#17291F; --warn-soft:#2C2412; --warn-ink:#E8C06A;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16.5px;line-height:1.6;padding-inline:20px;padding-block:0 64px}
+a{color:var(--accent);text-underline-offset:2px}
+a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:56px}
+header.top{max-width:1080px;margin:0 auto;padding-block:48px 28px;border-bottom:1px solid var(--line);margin-bottom:36px}
+.course{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+h1{font-size:clamp(30px,5vw,44px);line-height:1.12;margin:0 0 14px;letter-spacing:-.01em;text-wrap:balance}
+.lede{max-width:62ch;color:var(--muted);margin:0;font-size:17.5px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:18px;font-size:14px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:14.5px}
+nav.toc p{margin:0 0 10px;font-weight:600;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:t;display:grid;gap:2px}
+nav.toc li{counter-increment:t}
+nav.toc a{display:flex;gap:10px;padding:6px 8px;border-radius:6px;color:var(--ink);text-decoration:none}
+nav.toc a::before{content:counter(t);font-family:var(--mono);font-size:12.5px;color:var(--muted);min-width:1.4em;padding-top:1px}
+nav.toc a:hover{background:var(--surface)}
+nav.toc a.done::before{content:"✓";color:var(--ok)}
+
+main{min-width:0}
+section.step{padding-block:8px 36px;border-bottom:1px solid var(--line);margin-bottom:36px;scroll-margin-top:24px}
+section.step:last-of-type{border-bottom:0}
+.step-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}
+.num{font-family:var(--mono);font-size:14px;color:var(--accent);font-weight:500;flex:none}
+h2{font-size:25px;line-height:1.25;margin:0;text-wrap:balance}
+h3{font-size:17px;margin:26px 0 8px}
+p{margin:10px 0;max-width:68ch}
+.time{font-size:13.5px;color:var(--muted);margin:0 0 14px}
+ul.plain,ol.plain{padding-left:1.25em;margin:10px 0;max-width:68ch}
+ul.plain li,ol.plain li{margin:5px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--surface);border:1px solid var(--line);padding:1px 5px;border-radius:4px}
+kbd{font-family:var(--mono);font-size:.85em;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--surface)}
+
+.cmd{position:relative;margin:12px 0 16px;background:var(--code-bg);color:var(--code-ink);border-radius:8px;overflow:hidden}
+.cmd pre{margin:0;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:14px;line-height:1.65}
+.cmd .c{color:var(--code-dim)}
+.cmd .v{color:#F5B38F}
+.cmd-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 10px 8px 18px;border-bottom:1px solid rgba(255,255,255,.08);font-size:12.5px;color:var(--code-dim);font-family:var(--mono)}
+.copy{font:500 12.5px var(--sans);color:var(--code-ink);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:4px 10px;cursor:pointer}
+.copy:hover{background:rgba(255,255,255,.16)}
+.out{background:var(--surface);border:1px solid var(--line);border-radius:8px;margin:-6px 0 16px;padding:12px 16px;font-family:var(--mono);font-size:13.5px;color:var(--muted);overflow-x:auto;white-space:pre}
+.out::before{content:"Beklenen çıktı";display:block;font-family:var(--sans);font-size:12px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;color:var(--muted)}
+
+.note{border-radius:8px;padding:12px 16px;margin:14px 0;max-width:72ch;font-size:15.5px}
+.note.tip{background:var(--ok-soft)}
+.note.warn{background:var(--warn-soft);color:var(--warn-ink)}
+.note.warn a{color:inherit}
+.note b{font-weight:600}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:14px 0 0;flex-wrap:wrap}
+.tabs button{font:500 14.5px var(--sans);color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;padding:8px 14px;cursor:pointer;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.panel{padding-top:6px}
+
+.you{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:0 0 36px}
+.you h2{font-size:18px;margin:0 0 4px}
+.you p{margin:0 0 14px;color:var(--muted);font-size:15px}
+.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.fields label{display:grid;gap:4px;font-size:13.5px;color:var(--muted)}
+.fields input{font:15px var(--sans);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+
+.check{display:grid;gap:8px;margin:12px 0}
+.check label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;max-width:68ch}
+.check input{margin-top:5px;accent-color:var(--accent);width:16px;height:16px;flex:none}
+
+details.err{border:1px solid var(--line);border-radius:8px;background:var(--surface);margin:10px 0}
+details.err summary{cursor:pointer;padding:12px 16px;font-family:var(--mono);font-size:14px;list-style:none}
+details.err summary::-webkit-details-marker{display:none}
+details.err summary::before{content:"+";display:inline-block;width:1.2em;color:var(--accent)}
+details.err[open] summary::before{content:"–"}
+details.err .body{padding:0 16px 12px}
+
+table.levels{border-collapse:collapse;width:100%;font-size:15px;margin:10px 0}
+.tbl{overflow-x:auto}
+table.levels th,table.levels td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+table.levels th{font-size:12.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tag{display:inline-block;font-size:12.5px;padding:1px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-weight:500;white-space:nowrap}
+.tag.opt{background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+
+footer{max-width:1080px;margin:24px auto 0;color:var(--muted);font-size:14px}
+
+@media (max-width:860px){
+  .wrap{grid-template-columns:1fr;gap:0}
+  nav.toc{position:static;margin-bottom:28px;border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--surface)}
+  .fields{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+<style>nav.toc a.active{background:var(--surface);color:var(--accent);font-weight:500}</style>
+</head>
+<body>
+<header class="top">
+  <p class="course">Yazılım Kalite Güvencesi ve Testi · Ön hazırlık</p>
+  <h1>Python 101: ilk satırdan listelere</h1>
+  <p class="lede">Bu derste yazacağımız kodlar için gereken Python'un tamamı bu sayfada. Her bölümde kısa bir örnek ve çıktısı var. 11. bölümde <code>assert</code> ile ilk testlerimizi yazıyor, sonraki bölümlerde de onları kullanıyoruz. Örnekleri kopyalayıp kendi bilgisayarınızda çalıştırın; okumak yetmez.</p>
+  <div class="meta"><span>Süre: <b>3–4 saat, bölüm bölüm</b></span><span>Gerekenler: <b>Python 3.10 veya üstü, VS Code</b></span></div>
+</header>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Bölümler">
+    <p>Bölümler</p>
+    <ol id="toc">
+      <li><a href="#calistirmak">Python'u çalıştırmak</a></li>
+      <li><a href="#print">print ve yorumlar</a></li>
+      <li><a href="#degisken">Değişkenler ve tipler</a></li>
+      <li><a href="#sayilar">Sayılarla işlemler</a></li>
+      <li><a href="#metin">Metinler</a></li>
+      <li><a href="#input">Kullanıcıdan girdi</a></li>
+      <li><a href="#karsilastirma">Karşılaştırma ve mantık</a></li>
+      <li><a href="#if">if, elif, else</a></li>
+      <li><a href="#dongu">Döngüler</a></li>
+      <li><a href="#fonksiyon">Fonksiyonlar</a></li>
+      <li><a href="#assert">assert ile test</a></li>
+      <li><a href="#liste">Listeler</a></li>
+      <li><a href="#hepsi">Hepsi bir arada</a></li>
+      <li><a href="#hatalar">Sık hatalar</a></li>
+      <li><a href="#alistirma">Alıştırmalar</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <section class="step" id="calistirmak">
+      <div class="step-head"><span class="num">01</span><h2>Python'u çalıştırmak</h2></div>
+      <p class="time">10 dakika</p>
+      <p>Önce Python'un kurulu olduğunu kontrol edin. Terminali açın (Windows'ta VS Code terminali ya da PowerShell):</p>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python --version</pre></div>
+      <div class="out">Python 3.12.x</div>
+      <p>Windows'ta bu komut Microsoft Store'u açıyorsa ya da hata veriyorsa <code>py --version</code> deneyin; sonraki bütün komutlarda <code>python</code> yerine <code>py</code> yazın. Hiç kurulu değilse <a href="https://www.python.org/downloads/" target="_blank" rel="noopener">python.org</a> adresinden indirin ve kurulumda <b>“Add python.exe to PATH”</b> kutusunu işaretleyin.</p>
+
+      <h3>İki çalışma şekli</h3>
+      <p><b>1. Etkileşimli mod.</b> Terminale yalnızca <code>python</code> yazarsanız <code>&gt;&gt;&gt;</code> işareti çıkar. Yazdığınız her satır hemen çalışır. Küçük şeyleri denemek için idealdir. Çıkmak için <code>exit()</code> yazın.</p>
+      <div class="cmd"><div class="cmd-bar">Etkileşimli mod<button class="copy" type="button">Kopyala</button></div><pre>&gt;&gt;&gt; 2 + 3
+5
+&gt;&gt;&gt; "merhaba".upper()
+'MERHABA'</pre></div>
+      <p><b>2. Dosya olarak.</b> VS Code'da <code>merhaba.py</code> adında bir dosya oluşturun, içine yazın, kaydedin ve terminalden çalıştırın. Bu dersteki bütün ödevler böyle çalışacak.</p>
+      <div class="cmd"><div class="cmd-bar">merhaba.py<button class="copy" type="button">Kopyala</button></div><pre data-run>print("Merhaba, dünya!")</pre></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python merhaba.py</pre></div>
+      <div class="out">Merhaba, dünya!</div>
+      <div class="note tip"><b>İpucu:</b> Terminal, dosyanın bulunduğu klasörde açık olmalı. VS Code'da <kbd>Ctrl</kbd>+<kbd>`</kbd> ile açılan terminal zaten proje klasöründe açılır.</div>
+    </section>
+
+    <section class="step" id="print">
+      <div class="step-head"><span class="num">02</span><h2>print ve yorumlar</h2></div>
+      <p class="time">10 dakika</p>
+      <p><code>print</code> ekrana yazar. Virgülle birden fazla şey verirseniz aralarına boşluk koyar. <code>#</code> ile başlayan her şey yorumdur: Python onu okumaz, insanlar okur.</p>
+      <div class="cmd"><div class="cmd-bar">print.py<button class="copy" type="button">Kopyala</button></div><pre data-run><span class="c"># Bu bir yorum, çalıştırılmaz</span>
+print("Ders:", "Yazılım Testi")
+print("Öğrenci sayısı:", 42)
+print()                          <span class="c"># boş satır</span>
+print("Bitti")</pre></div>
+      <div class="out">Ders: Yazılım Testi
+Öğrenci sayısı: 42
+
+Bitti</div>
+      <div class="note tip"><b>Yorumu ne zaman yazın?</b> Kodun <i>ne</i> yaptığını değil, <i>neden</i> öyle yapıldığını anlatmak için. <code># sayacı bir artır</code> gereksizdir; kod zaten bunu söylüyor.</div>
+    </section>
+
+    <section class="step" id="degisken">
+      <div class="step-head"><span class="num">03</span><h2>Değişkenler ve veri tipleri</h2></div>
+      <p class="time">15 dakika</p>
+      <p>Değişken, bir değere verdiğiniz isimdir. <code>=</code> işareti “eşittir” değil, “ata” demektir: sağdaki değeri soldaki isme bağlar.</p>
+      <div class="cmd"><div class="cmd-bar">degiskenler.py<button class="copy" type="button">Kopyala</button></div><pre data-run>ad = "Ayşe"          <span class="c"># str: metin</span>
+yas = 21             <span class="c"># int: tam sayı</span>
+ortalama = 78.5      <span class="c"># float: ondalıklı sayı</span>
+mezun = False        <span class="c"># bool: True ya da False</span>
+
+print(ad, yas, ortalama, mezun)
+print(type(ad), type(yas), type(ortalama), type(mezun))
+
+yas = yas + 1        <span class="c"># değişkenin değeri değişebilir</span>
+print(yas)</pre></div>
+      <div class="out">Ayşe 21 78.5 False
+&lt;class 'str'&gt; &lt;class 'int'&gt; &lt;class 'float'&gt; &lt;class 'bool'&gt;
+22</div>
+      <h3>İsimlendirme kuralları</h3>
+      <ul class="plain">
+        <li>Küçük harf ve alt çizgi kullanın: <code>ogrenci_sayisi</code>, <code>vize_notu</code></li>
+        <li>Rakamla başlayamaz (<code>2not</code> olmaz), boşluk içeremez</li>
+        <li>Anlamlı olsun: <code>x</code> yerine <code>final_notu</code>. Altı ay sonra okuyacak kişi sizsiniz.</li>
+        <li>Türkçe karakter teknik olarak çalışır ama <code>ı, ş, ğ</code> kullanmamak klavye ve araç sorunlarını önler</li>
+      </ul>
+    </section>
+
+    <section class="step" id="sayilar">
+      <div class="step-head"><span class="num">04</span><h2>Sayılarla işlemler</h2></div>
+      <p class="time">15 dakika</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>İşlem</th><th>Anlamı</th><th>Örnek</th><th>Sonuç</th></tr></thead>
+        <tbody>
+          <tr><td><code>+ - *</code></td><td>Toplama, çıkarma, çarpma</td><td><code>7 * 2</code></td><td><code>14</code></td></tr>
+          <tr><td><code>/</code></td><td>Bölme (sonuç hep float)</td><td><code>7 / 2</code></td><td><code>3.5</code></td></tr>
+          <tr><td><code>//</code></td><td>Tam bölme (aşağı yuvarlar)</td><td><code>7 // 2</code></td><td><code>3</code></td></tr>
+          <tr><td><code>%</code></td><td>Bölümden kalan</td><td><code>7 % 2</code></td><td><code>1</code></td></tr>
+          <tr><td><code>**</code></td><td>Üs alma</td><td><code>2 ** 10</code></td><td><code>1024</code></td></tr>
+        </tbody>
+      </table></div>
+      <div class="cmd"><div class="cmd-bar">sayilar.py<button class="copy" type="button">Kopyala</button></div><pre data-run>vize = 60
+final = 85
+ortalama = vize * 0.4 + final * 0.6
+print(ortalama)
+print(round(ortalama))       <span class="c"># en yakın tam sayıya yuvarlar</span>
+print(10 / 4, 10 // 4, 10 % 4)</pre></div>
+      <div class="out">75.0
+75
+2.5 2 2</div>
+      <div class="note warn"><b>Dikkat:</b> <code>%</code> çok işe yarar. Bir sayının çift olup olmadığını <code>sayi % 2 == 0</code> ile, bir yılın 4'e bölünüp bölünmediğini <code>yil % 4 == 0</code> ile anlarsınız.</div>
+    </section>
+
+    <section class="step" id="metin">
+      <div class="step-head"><span class="num">05</span><h2>Metinler (str)</h2></div>
+      <p class="time">20 dakika</p>
+      <p>Metinler tek ya da çift tırnak içinde yazılır. En kullanışlı araç <b>f-string</b>'dir: tırnaktan önce <code>f</code> yazıp süslü parantez içine değişken koyarsınız.</p>
+      <div class="cmd"><div class="cmd-bar">metinler.py<button class="copy" type="button">Kopyala</button></div><pre data-run>ad = "Ayşe"
+soyad = "Yılmaz"
+not_ = 87.456
+
+tam_ad = ad + " " + soyad             <span class="c"># + ile birleştirme</span>
+print(tam_ad)
+print(f"{tam_ad} dersten {not_} aldı")  <span class="c"># f-string</span>
+print(f"Yuvarlanmış: {not_:.1f}")       <span class="c"># virgülden sonra 1 basamak</span>
+
+print(len(tam_ad))       <span class="c"># karakter sayısı (boşluk dahil)</span>
+print(tam_ad.upper())
+print(tam_ad.lower())
+print(tam_ad[0])         <span class="c"># ilk karakter: sayma 0'dan başlar</span>
+print("Ay" in tam_ad)    <span class="c"># içinde geçiyor mu?</span></pre></div>
+      <div class="out">Ayşe Yılmaz
+Ayşe Yılmaz dersten 87.456 aldı
+Yuvarlanmış: 87.5
+11
+AYŞE YILMAZ
+ayşe yılmaz
+A
+True</div>
+      <div class="note warn"><b>Metin ile sayı toplanamaz.</b> <code>"Not: " + 85</code> hata verir. Ya f-string kullanın ya da sayıyı <code>str(85)</code> ile metne çevirin.</div>
+    </section>
+
+    <section class="step" id="input">
+      <div class="step-head"><span class="num">06</span><h2>Kullanıcıdan girdi almak</h2></div>
+      <p class="time">10 dakika</p>
+      <p><code>input</code> kullanıcının yazdığını <b>her zaman metin (str) olarak</b> döndürür. Sayı istiyorsanız <code>int()</code> ya da <code>float()</code> ile çevirmeniz gerekir.</p>
+      <div class="cmd"><div class="cmd-bar">girdi.py<button class="copy" type="button">Kopyala</button></div><pre data-run data-stdin="Ali
+60
+80">ad = input("Adınız: ")
+vize = int(input("Vize: "))
+final = int(input("Final: "))
+print(f"{ad}, ortalamanız {vize * 0.4 + final * 0.6}")</pre></div>
+      <div class="out">Adınız: Ali
+Vize: 60
+Final: 80
+Ali, ortalamanız 72.0</div>
+      <div class="note warn"><b>En sık yapılan hata:</b> <code>int()</code> unutulursa <code>"60" + "80"</code> işlemi <code>"6080"</code> verir; çünkü iki metni yan yana ekler. Bu yüzden testlerde tipleri kontrol etmek önemlidir.</div>
+    </section>
+
+    <section class="step" id="karsilastirma">
+      <div class="step-head"><span class="num">07</span><h2>Karşılaştırma ve mantık</h2></div>
+      <p class="time">15 dakika</p>
+      <p>Karşılaştırmaların sonucu her zaman <code>True</code> ya da <code>False</code>'tur.</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>İşaret</th><th>Anlamı</th><th>Örnek</th><th>Sonuç</th></tr></thead>
+        <tbody>
+          <tr><td><code>==</code></td><td>eşit mi?</td><td><code>5 == 5</code></td><td><code>True</code></td></tr>
+          <tr><td><code>!=</code></td><td>farklı mı?</td><td><code>5 != 3</code></td><td><code>True</code></td></tr>
+          <tr><td><code>&lt; &gt;</code></td><td>küçük, büyük</td><td><code>49 &gt; 50</code></td><td><code>False</code></td></tr>
+          <tr><td><code>&lt;= &gt;=</code></td><td>küçük eşit, büyük eşit</td><td><code>50 &gt;= 50</code></td><td><code>True</code></td></tr>
+          <tr><td><code>and</code></td><td>ikisi de doğru mu?</td><td><code>True and False</code></td><td><code>False</code></td></tr>
+          <tr><td><code>or</code></td><td>en az biri doğru mu?</td><td><code>True or False</code></td><td><code>True</code></td></tr>
+          <tr><td><code>not</code></td><td>tersini al</td><td><code>not True</code></td><td><code>False</code></td></tr>
+        </tbody>
+      </table></div>
+      <div class="note warn"><b><code>=</code> ile <code>==</code> farklıdır.</b> <code>x = 5</code> değer atar, <code>x == 5</code> soru sorar. Koşullarda ve assert'lerde her zaman <code>==</code> kullanılır.</div>
+      <div class="cmd"><div class="cmd-bar">mantik.py<button class="copy" type="button">Kopyala</button></div><pre data-run>puan = 55
+print(puan &gt;= 50)                    <span class="c"># geçti mi?</span>
+print(0 &lt;= puan &lt;= 100)              <span class="c"># geçerli aralıkta mı? (zincirleme)</span>
+print(puan &gt;= 50 and puan &lt; 70)     <span class="c"># CC aralığında mı?</span></pre></div>
+      <div class="out">True
+True
+True</div>
+    </section>
+
+    <section class="step" id="if">
+      <div class="step-head"><span class="num">08</span><h2>if, elif, else</h2></div>
+      <p class="time">20 dakika</p>
+      <p>Koşula göre farklı kod çalıştırır. Python'da blokları süslü parantez değil <b>girinti</b> (4 boşluk) belirler. Koşul satırı <code>:</code> ile biter.</p>
+      <div class="cmd"><div class="cmd-bar">harf_notu.py<button class="copy" type="button">Kopyala</button></div><pre data-run>puan = 72
+
+if puan &gt;= 85:
+    harf = "AA"
+elif puan &gt;= 70:
+    harf = "BB"
+elif puan &gt;= 50:
+    harf = "CC"
+else:
+    harf = "FF"
+
+print(f"{puan} puan: {harf}")</pre></div>
+      <div class="out">72 puan: BB</div>
+      <p>Koşullar yukarıdan aşağı sırayla denenir; ilk doğru olan çalışır, gerisine bakılmaz. Bu yüzden sıra önemlidir: <code>puan &gt;= 50</code> koşulunu en başa yazsaydınız 90 alan öğrenci de CC alırdı.</p>
+      <div class="note warn"><b>Girinti hatası:</b> Blok içindeki satırlar aynı hizada olmalı. Bir satır 3, diğeri 4 boşlukla girintilenirse <code>IndentationError</code> alırsınız. VS Code'da <kbd>Tab</kbd> tuşu otomatik 4 boşluk koyar.</div>
+    </section>
+
+    <section class="step" id="dongu">
+      <div class="step-head"><span class="num">09</span><h2>Döngüler: for ve while</h2></div>
+      <p class="time">20 dakika</p>
+      <h3>for: belli sayıda tekrar</h3>
+      <p><code>range(bas, bitis)</code> başlangıcı içerir, bitişi <b>içermez</b>. <code>range(1, 6)</code> 1'den 5'e kadar sayar.</p>
+      <div class="cmd"><div class="cmd-bar">for.py<button class="copy" type="button">Kopyala</button></div><pre data-run>for i in range(1, 6):
+    print(i, "karesi", i * i)
+
+toplam = 0
+for sayi in range(1, 101):
+    toplam = toplam + sayi
+print("1'den 100'e toplam:", toplam)</pre></div>
+      <div class="out">1 karesi 1
+2 karesi 4
+3 karesi 9
+4 karesi 16
+5 karesi 25
+1'den 100'e toplam: 5050</div>
+      <h3>while: koşul doğru olduğu sürece</h3>
+      <div class="cmd"><div class="cmd-bar">while.py<button class="copy" type="button">Kopyala</button></div><pre data-run>bakiye = 100
+ay = 0
+while bakiye &lt; 200:
+    bakiye = bakiye * 1.1     <span class="c"># her ay %10 artış</span>
+    ay = ay + 1
+print(f"{ay} ayda ikiye katlandı")</pre></div>
+      <div class="out">8 ayda ikiye katlandı</div>
+      <div class="note warn"><b>Sonsuz döngü:</b> while'ın koşulu hiç yanlış olmazsa program sonsuza kadar döner. Döngü içinde koşulu değiştiren bir satır olduğundan emin olun. Takılırsanız terminalde <kbd>Ctrl</kbd>+<kbd>C</kbd> programı durdurur. (Zune müzik çalarlarını donduran hata tam olarak buydu.)</div>
+    </section>
+
+    <section class="step" id="fonksiyon">
+      <div class="step-head"><span class="num">10</span><h2>Fonksiyonlar</h2></div>
+      <p class="time">25 dakika</p>
+      <p>Fonksiyon, bir işe isim vermektir: girdileri (parametreler) alır, bir sonuç <b>döndürür</b> (<code>return</code>). Bu derste test edeceğimiz şeylerin neredeyse hepsi fonksiyon olacak.</p>
+      <div class="cmd"><div class="cmd-bar">fonksiyon.py<button class="copy" type="button">Kopyala</button></div><pre data-run>def ortalama_hesapla(vize, final):
+    return vize * 0.4 + final * 0.6
+
+
+def gecti_mi(ortalama):
+    return ortalama &gt;= 60
+
+
+ort = ortalama_hesapla(50, 70)
+print(ort)
+print(gecti_mi(ort))
+print(gecti_mi(ortalama_hesapla(80, 30)))</pre></div>
+      <div class="out">62.0
+True
+False</div>
+      <h3>return ile print aynı şey değil</h3>
+      <p>Bu, yeni başlayanların en sık karıştırdığı konudur ve test yazarken çok önemlidir.</p>
+      <div class="cmd"><div class="cmd-bar">return_print.py<button class="copy" type="button">Kopyala</button></div><pre data-run>def topla_yaz(a, b):
+    print(a + b)          <span class="c"># ekrana yazar, hiçbir şey döndürmez</span>
+
+
+def topla(a, b):
+    return a + b          <span class="c"># sonucu çağırana geri verir</span>
+
+
+x = topla_yaz(2, 3)
+y = topla(2, 3)
+print("x =", x)
+print("y =", y)</pre></div>
+      <div class="out">5
+x = None
+y = 5</div>
+      <p><code>topla_yaz</code> ekrana 5 yazdı ama sonucu geri vermedi; <code>x</code>'in değeri <code>None</code> (hiçbir şey). Testler fonksiyonun <b>döndürdüğü</b> değeri kontrol eder, ekrana yazdığını değil. Bu yüzden fonksiyonlarınız hesapladığını <code>return</code> ile vermeli, yazdırma işini fonksiyonun dışında yapmalısınız.</p>
+    </section>
+
+    <section class="step" id="assert">
+      <div class="step-head"><span class="num">11</span><h2>assert ile test yazmak</h2></div>
+      <p class="time">25 dakika</p>
+      <p><code>assert</code>, “bu ifade doğru olmalı” demektir.</p>
+      <ul class="plain">
+        <li>İfade doğruysa hiçbir şey olmaz, program bir sonraki satıra geçer.</li>
+        <li>İfade yanlışsa program <code>AssertionError</code> ile durur ve hangi satırda durduğunu söyler.</li>
+      </ul>
+      <p>Test yazmanın en sade hali budur: bir fonksiyonu bilinen bir girdiyle çağırırsınız ve sonucun beklediğiniz değere eşit olduğunu <code>assert</code> ile söylersiniz.</p>
+      <div class="cmd"><div class="cmd-bar">assert_ornek.py<button class="copy" type="button">Kopyala</button></div><pre data-run>def gecti_mi(ortalama):
+    return ortalama &gt;= 60
+
+
+assert gecti_mi(75) == True       <span class="c"># sıradan bir değer</span>
+assert gecti_mi(60) == True       <span class="c"># tam sınır</span>
+assert gecti_mi(59) == False      <span class="c"># sınırın bir altı</span>
+print("Tüm testler geçti")</pre></div>
+      <div class="out">Tüm testler geçti</div>
+
+      <h3>Test başarısız olursa ne görürsünüz?</h3>
+      <p>Diyelim ki biri fonksiyonda <code>&gt;=</code> yerine yanlışlıkla <code>&gt;</code> yazdı:</p>
+      <div class="cmd"><div class="cmd-bar">assert_hata.py<button class="copy" type="button">Kopyala</button></div><pre data-run data-fail>def gecti_mi(ortalama):
+    return ortalama &gt; 60          <span class="c"># hata: &gt;= olmalıydı</span>
+
+
+assert gecti_mi(75) == True
+assert gecti_mi(60) == True
+assert gecti_mi(59) == False
+print("Tüm testler geçti")</pre></div>
+      <div class="out">Traceback (most recent call last):
+  File "assert_hata.py", line 6, in &lt;module&gt;
+    assert gecti_mi(60) == True
+AssertionError</div>
+      <p>Program 6. satırda durdu: 60 puanlık öğrenci geçmesi gerekirken geçemedi. Dikkat edin, 75 ve 59 testleri bu hatayı <b>yakalamazdı</b>; hatayı yalnızca tam sınırdaki 60 testi gösterdi.</p>
+
+      <h3>Hata mesajı eklemek</h3>
+      <p>Virgülden sonra bir metin yazarsanız, test başarısız olduğunda o metin gösterilir:</p>
+      <div class="cmd"><div class="cmd-bar">Python<button class="copy" type="button">Kopyala</button></div><pre>assert gecti_mi(60) == True, "60 alan öğrenci geçmeli"</pre></div>
+      <div class="out">AssertionError: 60 alan öğrenci geçmeli</div>
+
+      <h3>İyi test nasıl seçilir?</h3>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Durum</th><th>gecti_mi için örnek</th><th>Neden?</th></tr></thead>
+        <tbody>
+          <tr><td>Sıradan</td><td><code>75</code></td><td>Temel davranış çalışıyor mu?</td></tr>
+          <tr><td>Tam sınır</td><td><code>60</code></td><td>Hatalar en çok burada çıkar</td></tr>
+          <tr><td>Sınırın bir altı</td><td><code>59</code></td><td>Sınırın öbür tarafı doğru mu?</td></tr>
+          <tr><td>Uç değerler</td><td><code>0</code>, <code>100</code></td><td>Aralığın başı ve sonu</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note tip"><b>3. haftada</b> aynı testleri <code>pytest</code> ile çalıştıracağız. pytest her testi ayrı ayrı çalıştırır ve raporlar; ama testin içinde yazdığınız şey yine bu <code>assert</code> satırları olacak.</div>
+    </section>
+
+    <section class="step" id="liste">
+      <div class="step-head"><span class="num">12</span><h2>Listeler</h2></div>
+      <p class="time">30 dakika</p>
+      <p>Liste, birden fazla değeri sırayla tutar. Köşeli parantezle yazılır. Bir sınıfın notları, bir öğrencinin dersleri, bir sepetteki ürünler: hepsi listedir.</p>
+      <div class="cmd"><div class="cmd-bar">liste.py<button class="copy" type="button">Kopyala</button></div><pre data-run>notlar = [70, 45, 90, 60, 85]
+
+print(notlar[0])        <span class="c"># ilk eleman (sayma 0'dan başlar)</span>
+print(notlar[2])        <span class="c"># üçüncü eleman</span>
+print(notlar[-1])       <span class="c"># son eleman</span>
+print(notlar[1:3])      <span class="c"># 1. ve 2. indeks (3 dahil değil)</span>
+print(len(notlar))      <span class="c"># eleman sayısı</span></pre></div>
+      <div class="out">70
+90
+85
+[45, 90]
+5</div>
+
+      <h3>Listeyi değiştirmek</h3>
+      <div class="cmd"><div class="cmd-bar">liste_degistir.py<button class="copy" type="button">Kopyala</button></div><pre data-run>dersler = ["Matematik", "Fizik"]
+dersler.append("Yazılım Testi")    <span class="c"># sona ekle</span>
+print(dersler)
+
+dersler.remove("Fizik")            <span class="c"># değere göre sil</span>
+print(dersler)
+
+dersler[0] = "Lineer Cebir"        <span class="c"># bir elemanı değiştir</span>
+print(dersler)
+
+print("Fizik" in dersler)          <span class="c"># içinde var mı?</span></pre></div>
+      <div class="out">['Matematik', 'Fizik', 'Yazılım Testi']
+['Matematik', 'Yazılım Testi']
+['Lineer Cebir', 'Yazılım Testi']
+False</div>
+
+      <h3>Liste üzerinde dolaşmak</h3>
+      <div class="cmd"><div class="cmd-bar">liste_dongu.py<button class="copy" type="button">Kopyala</button></div><pre data-run>notlar = [70, 45, 90, 60, 85]
+
+gecenler = []
+for n in notlar:
+    if n &gt;= 60:
+        gecenler.append(n)
+
+print("Geçenler:", gecenler)
+print("Toplam:", sum(notlar))
+print("En düşük:", min(notlar), "En yüksek:", max(notlar))
+print("Ortalama:", sum(notlar) / len(notlar))
+print("Sıralı:", sorted(notlar))</pre></div>
+      <div class="out">Geçenler: [70, 90, 60, 85]
+Toplam: 350
+En düşük: 45 En yüksek: 90
+Ortalama: 70.0
+Sıralı: [45, 60, 70, 85, 90]</div>
+
+      <div class="note warn"><b>Boş liste ve olmayan indeks:</b> <code>notlar[5]</code> beş elemanlı bir listede <code>IndexError</code> verir (son indeks 4'tür). Boş bir listenin ortalamasını <code>sum([]) / len([])</code> ile almaya çalışırsanız <code>ZeroDivisionError</code> alırsınız. Test yazarken boş listeyi mutlaka deneyin.</div>
+    </section>
+
+    <section class="step" id="hepsi">
+      <div class="step-head"><span class="num">13</span><h2>Hepsi bir arada: sınıf not analizi</h2></div>
+      <p class="time">20 dakika</p>
+      <p>Şimdiye kadar gördüğümüz her şey tek bir dosyada: fonksiyonlar, if, döngü, liste ve her fonksiyon için testler. Bu dersteki ödevleriniz de tam olarak bu düzende olacak.</p>
+      <div class="cmd"><div class="cmd-bar">not_analizi.py<button class="copy" type="button">Kopyala</button></div><pre data-run>GECME_NOTU = 60
+
+
+def ortalama(notlar):
+    if len(notlar) == 0:
+        return 0
+    return sum(notlar) / len(notlar)
+
+
+def gecen_sayisi(notlar):
+    sayac = 0
+    for n in notlar:
+        if n &gt;= GECME_NOTU:
+            sayac = sayac + 1
+    return sayac
+
+
+def harf_notu(puan):
+    if puan &gt;= 85:
+        return "AA"
+    elif puan &gt;= 70:
+        return "BB"
+    elif puan &gt;= 60:
+        return "CC"
+    else:
+        return "FF"
+
+
+<span class="c"># --- Testler ---</span>
+assert ortalama([60, 80]) == 70
+assert ortalama([100]) == 100
+assert ortalama([]) == 0                  <span class="c"># boş sınıf</span>
+
+assert gecen_sayisi([70, 45, 90]) == 2
+assert gecen_sayisi([60]) == 1            <span class="c"># tam sınır</span>
+assert gecen_sayisi([59]) == 0
+assert gecen_sayisi([]) == 0
+
+assert harf_notu(85) == "AA"
+assert harf_notu(84) == "BB"
+assert harf_notu(60) == "CC"
+assert harf_notu(59) == "FF"
+print("Tüm testler geçti")
+
+<span class="c"># --- Programın kendisi ---</span>
+sinif = [70, 45, 90, 60, 85, 52]
+print(f"Ortalama: {ortalama(sinif):.1f}")
+print(f"Geçen: {gecen_sayisi(sinif)} / {len(sinif)}")
+for n in sinif:
+    print(n, harf_notu(n))</pre></div>
+      <div class="out">Tüm testler geçti
+Ortalama: 67.0
+Geçen: 4 / 6
+70 BB
+45 FF
+90 AA
+60 CC
+85 AA
+52 FF</div>
+      <div class="note tip"><b>Deneyin:</b> <code>harf_notu</code> fonksiyonunda <code>puan &gt;= 85</code> satırını <code>puan &gt; 85</code> yapıp dosyayı tekrar çalıştırın. Hangi test kırıldı? Neden yalnızca o?</div>
+    </section>
+
+    <section class="step" id="hatalar">
+      <div class="step-head"><span class="num">14</span><h2>Sık karşılaşılan hatalar</h2></div>
+      <p class="time">Başvuru bölümü</p>
+      <p>Hata mesajını okumayı öğrenmek, programlamanın yarısıdır. Mesajın <b>son satırı</b> hatanın türünü, bir üstündeki satırlar ise nerede olduğunu söyler.</p>
+      <details class="err"><summary>SyntaxError: expected ':'</summary><div class="body"><p><code>if</code>, <code>for</code>, <code>while</code>, <code>def</code> satırlarının sonuna iki nokta koymayı unuttunuz: <code>if puan &gt;= 50:</code></p></div></details>
+      <details class="err"><summary>IndentationError: expected an indented block</summary><div class="body"><p><code>:</code> ile biten satırın altındaki satır girintili değil. Blok içindeki her satırın başında 4 boşluk olmalı.</p></div></details>
+      <details class="err"><summary>NameError: name 'ortalam' is not defined</summary><div class="body"><p>Tanımlanmamış bir isim kullandınız. Çoğunlukla yazım hatasıdır (<code>ortalama</code> yerine <code>ortalam</code>) ya da değişkeni kullanmadan önce tanımlamamışsınızdır.</p></div></details>
+      <details class="err"><summary>TypeError: can only concatenate str (not "int") to str</summary><div class="body"><p>Metin ile sayıyı <code>+</code> ile birleştirmeye çalıştınız: <code>"Not: " + 85</code>. f-string kullanın: <code>f"Not: {85}"</code>. Ya da <code>input</code>'tan gelen değeri <code>int()</code> ile çevirmeyi unuttunuz.</p></div></details>
+      <details class="err"><summary>ValueError: invalid literal for int() with base 10: 'abc'</summary><div class="body"><p><code>int()</code> sayıya çevrilemeyen bir metin aldı. Kullanıcı sayı yerine harf yazmış olabilir.</p></div></details>
+      <details class="err"><summary>IndexError: list index out of range</summary><div class="body"><p>Listede olmayan bir indekse eriştiniz. 5 elemanlı listenin son indeksi 4'tür. Boş listede <code>liste[0]</code> bile bu hatayı verir.</p></div></details>
+      <details class="err"><summary>ZeroDivisionError: division by zero</summary><div class="body"><p>Sıfıra böldünüz. En sık sebebi boş listenin ortalamasını almaktır: <code>sum(x) / len(x)</code>, <code>x</code> boşken. Bölmeden önce <code>if len(x) == 0</code> kontrolü yapın.</p></div></details>
+      <details class="err"><summary>AssertionError</summary><div class="body"><p>Bu bir Python hatası değil, testinizin çalıştığının kanıtı: bir <code>assert</code> satırı yanlış çıktı. Mesajın üstündeki satır hangi testin başarısız olduğunu gösterir. Ya kodunuzda bir hata var ya da testteki beklenen değer yanlış; ikisini de kontrol edin.</p></div></details>
+    </section>
+
+    <section class="step" id="alistirma">
+      <div class="step-head"><span class="num">15</span><h2>Alıştırmalar</h2></div>
+      <p class="time">Her biri 10–20 dakika</p>
+      <p>Her alıştırmada fonksiyonu siz yazacaksınız. Altındaki <code>assert</code> satırlarını olduğu gibi dosyanıza kopyalayın; hepsi geçene kadar fonksiyonunuzu düzeltin. Çözüme bakmadan önce en az bir kez deneyin.</p>
+
+      <h3>1. Çift mi?</h3>
+      <p>Bir sayının çift olup olmadığını döndüren <code>cift_mi(sayi)</code> fonksiyonunu yazın.</p>
+      <div class="cmd"><div class="cmd-bar">testler<button class="copy" type="button">Kopyala</button></div><pre>assert cift_mi(4) == True
+assert cift_mi(7) == False
+assert cift_mi(0) == True
+assert cift_mi(-2) == True</pre></div>
+      <details class="err"><summary>Çözümü göster</summary><div class="body"><div class="cmd"><div class="cmd-bar">cozum<button class="copy" type="button">Kopyala</button></div><pre data-run>def cift_mi(sayi):
+    return sayi % 2 == 0
+
+
+assert cift_mi(4) == True
+assert cift_mi(7) == False
+assert cift_mi(0) == True
+assert cift_mi(-2) == True</pre></div></div></details>
+
+      <h3>2. Artık yıl</h3>
+      <p>4'e bölünen yıllar artık yıldır; ama 100'e bölünenler değildir; ama 400'e de bölünenler yine artık yıldır. <code>artik_yil(yil)</code> fonksiyonunu yazın.</p>
+      <div class="cmd"><div class="cmd-bar">testler<button class="copy" type="button">Kopyala</button></div><pre>assert artik_yil(2024) == True
+assert artik_yil(2023) == False
+assert artik_yil(1900) == False
+assert artik_yil(2000) == True</pre></div>
+      <details class="err"><summary>Çözümü göster</summary><div class="body"><div class="cmd"><div class="cmd-bar">cozum<button class="copy" type="button">Kopyala</button></div><pre data-run>def artik_yil(yil):
+    if yil % 400 == 0:
+        return True
+    if yil % 100 == 0:
+        return False
+    return yil % 4 == 0
+
+
+assert artik_yil(2024) == True
+assert artik_yil(2023) == False
+assert artik_yil(1900) == False
+assert artik_yil(2000) == True</pre></div></div></details>
+
+      <h3>3. Sesli harf sayısı</h3>
+      <p>Bir metindeki sesli harfleri (a, e, ı, i, o, ö, u, ü) sayan <code>sesli_sayisi(metin)</code> fonksiyonunu yazın. Büyük harfler de sayılmalı.</p>
+      <div class="cmd"><div class="cmd-bar">testler<button class="copy" type="button">Kopyala</button></div><pre>assert sesli_sayisi("merhaba") == 3
+assert sesli_sayisi("") == 0
+assert sesli_sayisi("xyz") == 0
+assert sesli_sayisi("OKUL") == 2</pre></div>
+      <details class="err"><summary>Çözümü göster</summary><div class="body"><div class="cmd"><div class="cmd-bar">cozum<button class="copy" type="button">Kopyala</button></div><pre data-run>def sesli_sayisi(metin):
+    sesliler = "aeıioöuüAEIİOÖUÜ"
+    sayac = 0
+    for harf in metin:
+        if harf in sesliler:
+            sayac = sayac + 1
+    return sayac
+
+
+assert sesli_sayisi("merhaba") == 3
+assert sesli_sayisi("") == 0
+assert sesli_sayisi("xyz") == 0
+assert sesli_sayisi("OKUL") == 2</pre></div></div></details>
+
+      <h3>4. En büyük ikinci not</h3>
+      <p><code>ikinci_en_buyuk(notlar)</code> listedeki en büyük ikinci farklı değeri döndürsün. Listede iki farklı değer yoksa <code>None</code> döndürsün. (<code>max</code> ve <code>sorted</code> kullanabilirsiniz.)</p>
+      <div class="cmd"><div class="cmd-bar">testler<button class="copy" type="button">Kopyala</button></div><pre>assert ikinci_en_buyuk([70, 90, 85]) == 85
+assert ikinci_en_buyuk([90, 90, 80]) == 80
+assert ikinci_en_buyuk([50]) == None
+assert ikinci_en_buyuk([]) == None</pre></div>
+      <details class="err"><summary>Çözümü göster</summary><div class="body"><div class="cmd"><div class="cmd-bar">cozum<button class="copy" type="button">Kopyala</button></div><pre data-run>def ikinci_en_buyuk(notlar):
+    farkli = []
+    for n in notlar:
+        if n not in farkli:
+            farkli.append(n)
+    if len(farkli) &lt; 2:
+        return None
+    return sorted(farkli)[-2]
+
+
+assert ikinci_en_buyuk([70, 90, 85]) == 85
+assert ikinci_en_buyuk([90, 90, 80]) == 80
+assert ikinci_en_buyuk([50]) == None
+assert ikinci_en_buyuk([]) == None</pre></div></div></details>
+      <p>İkinci testi (<code>[90, 90, 80]</code>) neden eklediğimizi düşünün: <code>sorted(notlar)[-2]</code> gibi kısa bir çözüm ilk testi geçer ama bu testte 90 döndürür.</p>
+
+      <h3>5. Kendi testlerinizi yazın</h3>
+      <p>Aşağıdaki fonksiyon bir ürünün indirimli fiyatını hesaplıyor. İndirim oranı 0 ile 50 arasında olmalı; bu aralığın dışındaki oranlarda fiyat değişmemeli. Fonksiyonu çalıştırmadan önce en az <b>6 assert</b> yazın: sıradan değer, sınırlar (0 ve 50), sınırın dışı (-1 ve 51). Sonra çalıştırın. Fonksiyonda bir hata var; testleriniz onu buluyor mu?</p>
+      <div class="cmd"><div class="cmd-bar">indirim.py<button class="copy" type="button">Kopyala</button></div><pre>def indirimli_fiyat(fiyat, oran):
+    if oran &gt;= 0 and oran &lt; 50:
+        return fiyat * (100 - oran) / 100
+    return fiyat</pre></div>
+      <details class="err"><summary>İpucu</summary><div class="body"><p>Şartname “0 ile 50 arasında” diyor; yani 0 ve 50 dahil. Koşul ifadesi aynı şeyi mi söylüyor? <code>indirimli_fiyat(200, 50)</code> kaç döndürmeli, kaç döndürüyor? 10 ya da 30 gibi sıradan değerlerle yazılmış testler bu hatayı bulamaz; hatayı yalnızca tam sınırdaki test gösterir.</p></div></details>
+
+      <div class="note tip"><b>Bitirdiniz mi?</b> Alıştırma dosyalarınızı <code>kalite-lab</code> deponuza ekleyip her biri için ayrı bir commit yapın. Commit mesajı ne yaptığınızı söylesin: “cift_mi fonksiyonu ve testleri eklendi”.</div>
+    </section>
+
+  </main>
+</div>
+
+<footer>Yazılım Kalite Güvencesi ve Testi · Python 101. Örneklerin tamamı Python 3.11 ile çalıştırılarak doğrulanmıştır.</footer>
+
+<script>
+(function(){
+  document.querySelectorAll(".copy").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var pre=btn.closest(".cmd").querySelector("pre");
+      var text=pre.innerText;
+      function done(msg){btn.textContent=msg;setTimeout(function(){btn.textContent="Kopyala"},1600)}
+      function fallback(){var r=document.createRange();r.selectNodeContents(pre);var s=getSelection();s.removeAllRanges();s.addRange(r);done("Seçildi, Ctrl+C")}
+      try{navigator.clipboard.writeText(text).then(function(){done("Kopyalandı")},fallback)}catch(e){fallback()}
+    });
+  });
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'))});
+  function spy(){
+    var y=window.scrollY+120, cur=0;
+    secs.forEach(function(s,i){if(s&&s.offsetTop<=y)cur=i});
+    links.forEach(function(a,i){a.classList.toggle('active',i===cur)});
+  }
+  window.addEventListener('scroll',spy,{passive:true}); spy();
+})();
+</script>
+</body>
+</html>

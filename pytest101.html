@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pytest 101</title>
+<meta name="description" content="Yazılım Kalite Güvencesi ve Testi dersi için pytest: test dosyaları, çıktıyı okumak, sınır değerleri, pytest.raises, pytest.approx ve mutasyon testi.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+:root{
+  --bg:#F6F7F9;
+  --surface:#FFFFFF;
+  --ink:#1A2130;
+  --muted:#586274;
+  --line:#DDE1E8;
+  --accent:#B8430F;
+  --accent-soft:#FBEDE6;
+  --code-bg:#1C2331;
+  --code-ink:#E6E9EF;
+  --code-dim:#8B95A7;
+  --ok:#1E7A4C;
+  --ok-soft:#E4F3EA;
+  --warn-soft:#FFF4DB;
+  --warn-ink:#7A5200;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#12161E; --surface:#1A1F29; --ink:#E7EAF0; --muted:#9AA3B3; --line:#2C3340;
+    --accent:#F08A5D; --accent-soft:#2E2019; --code-bg:#0C1017; --code-ink:#E6E9EF; --code-dim:#7D8799;
+    --ok:#5CC48E; --ok-soft:#17291F; --warn-soft:#2C2412; --warn-ink:#E8C06A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#12161E; --surface:#1A1F29; --ink:#E7EAF0; --muted:#9AA3B3; --line:#2C3340;
+  --accent:#F08A5D; --accent-soft:#2E2019; --code-bg:#0C1017; --code-ink:#E6E9EF; --code-dim:#7D8799;
+  --ok:#5CC48E; --ok-soft:#17291F; --warn-soft:#2C2412; --warn-ink:#E8C06A;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16.5px;line-height:1.6;padding-inline:20px;padding-block:0 64px}
+a{color:var(--accent);text-underline-offset:2px}
+.home-btn{position:fixed;top:16px;left:16px;z-index:50;display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-family:var(--mono);font-size:13px;padding:8px 14px;border-radius:999px;box-shadow:0 2px 10px rgba(0,0,0,.1);transition:border-color .15s ease,color .15s ease}
+.home-btn:hover{border-color:var(--accent);color:var(--accent)}
+@media (max-width:480px){.home-btn{top:10px;left:10px;padding:7px 11px;font-size:12px}}
+a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:56px}
+header.top{max-width:1080px;margin:0 auto;padding-block:48px 28px;border-bottom:1px solid var(--line);margin-bottom:36px}
+.course{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+h1{font-size:clamp(30px,5vw,44px);line-height:1.12;margin:0 0 14px;letter-spacing:-.01em;text-wrap:balance}
+.lede{max-width:62ch;color:var(--muted);margin:0;font-size:17.5px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:18px;font-size:14px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:14.5px}
+nav.toc p{margin:0 0 10px;font-weight:600;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:t;display:grid;gap:2px}
+nav.toc li{counter-increment:t}
+nav.toc a{display:flex;gap:10px;padding:6px 8px;border-radius:6px;color:var(--ink);text-decoration:none}
+nav.toc a::before{content:counter(t);font-family:var(--mono);font-size:12.5px;color:var(--muted);min-width:1.4em;padding-top:1px}
+nav.toc a:hover{background:var(--surface)}
+nav.toc a.done::before{content:"✓";color:var(--ok)}
+
+main{min-width:0}
+section.step{padding-block:8px 36px;border-bottom:1px solid var(--line);margin-bottom:36px;scroll-margin-top:24px}
+section.step:last-of-type{border-bottom:0}
+.step-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}
+.num{font-family:var(--mono);font-size:14px;color:var(--accent);font-weight:500;flex:none}
+h2{font-size:25px;line-height:1.25;margin:0;text-wrap:balance}
+h3{font-size:17px;margin:26px 0 8px}
+p{margin:10px 0;max-width:68ch}
+.time{font-size:13.5px;color:var(--muted);margin:0 0 14px}
+ul.plain,ol.plain{padding-left:1.25em;margin:10px 0;max-width:68ch}
+ul.plain li,ol.plain li{margin:5px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--surface);border:1px solid var(--line);padding:1px 5px;border-radius:4px}
+kbd{font-family:var(--mono);font-size:.85em;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--surface)}
+
+.cmd{position:relative;margin:12px 0 16px;background:var(--code-bg);color:var(--code-ink);border-radius:8px;overflow:hidden}
+.cmd pre{margin:0;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:14px;line-height:1.65}
+.cmd .c{color:var(--code-dim)}
+.cmd .v{color:#F5B38F}
+.cmd-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 10px 8px 18px;border-bottom:1px solid rgba(255,255,255,.08);font-size:12.5px;color:var(--code-dim);font-family:var(--mono)}
+.copy{font:500 12.5px var(--sans);color:var(--code-ink);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:4px 10px;cursor:pointer}
+.copy:hover{background:rgba(255,255,255,.16)}
+.out{background:var(--surface);border:1px solid var(--line);border-radius:8px;margin:-6px 0 16px;padding:12px 16px;font-family:var(--mono);font-size:13.5px;color:var(--muted);overflow-x:auto;white-space:pre}
+.out::before{content:"Beklenen çıktı";display:block;font-family:var(--sans);font-size:12px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;color:var(--muted)}
+
+.note{border-radius:8px;padding:12px 16px;margin:14px 0;max-width:72ch;font-size:15.5px}
+.note.tip{background:var(--ok-soft)}
+.note.warn{background:var(--warn-soft);color:var(--warn-ink)}
+.note.warn a{color:inherit}
+.note b{font-weight:600}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:14px 0 0;flex-wrap:wrap}
+.tabs button{font:500 14.5px var(--sans);color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;padding:8px 14px;cursor:pointer;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.panel{padding-top:6px}
+
+.you{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:0 0 36px}
+.you h2{font-size:18px;margin:0 0 4px}
+.you p{margin:0 0 14px;color:var(--muted);font-size:15px}
+.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.fields label{display:grid;gap:4px;font-size:13.5px;color:var(--muted)}
+.fields input{font:15px var(--sans);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+
+.check{display:grid;gap:8px;margin:12px 0}
+.check label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;max-width:68ch}
+.check input{margin-top:5px;accent-color:var(--accent);width:16px;height:16px;flex:none}
+
+details.err{border:1px solid var(--line);border-radius:8px;background:var(--surface);margin:10px 0}
+details.err summary{cursor:pointer;padding:12px 16px;font-family:var(--mono);font-size:14px;list-style:none}
+details.err summary::-webkit-details-marker{display:none}
+details.err summary::before{content:"+";display:inline-block;width:1.2em;color:var(--accent)}
+details.err[open] summary::before{content:"–"}
+details.err .body{padding:0 16px 12px}
+
+table.levels{border-collapse:collapse;width:100%;font-size:15px;margin:10px 0}
+.tbl{overflow-x:auto}
+table.levels th,table.levels td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+table.levels th{font-size:12.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tag{display:inline-block;font-size:12.5px;padding:1px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-weight:500;white-space:nowrap}
+.tag.opt{background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+
+footer{max-width:1080px;margin:24px auto 0;color:var(--muted);font-size:14px}
+
+@media (max-width:860px){
+  .wrap{grid-template-columns:1fr;gap:0}
+  nav.toc{position:static;margin-bottom:28px;border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--surface)}
+  .fields{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+<style>nav.toc a.active{background:var(--surface);color:var(--accent);font-weight:500}</style>
+</head>
+<body>
+<a class="home-btn" href="index.html">← Ana sayfa</a>
+<header class="top">
+  <p class="course">Yazılım Kalite Güvencesi ve Testi · 3. hafta</p>
+  <h1>pytest 101: testleri düzenli yazmak</h1>
+  <p class="lede">Python 101'de testleri <code>assert</code> satırlarıyla kodun altına yazdık. Bu sayfada aynı <code>assert</code>'leri <b>pytest</b> ile çalıştırıyoruz: her test ayrı çalışır, sonunda kaç testin geçtiğini görürsünüz ve bir test kırıldığında pytest size nedenini gösterir. Örnekleri sırayla kendi bilgisayarınızda çalıştırın.</p>
+  <div class="meta"><span>Süre: <b>3 saat, bölüm bölüm</b></span><span>Gerekenler: <b>Python 101, Python 3.10 veya üstü, VS Code</b></span></div>
+</header>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Bölümler">
+    <p>Bölümler</p>
+    <ol id="toc">
+      <li><a href="#neden">Neden pytest?</a></li>
+      <li><a href="#kurulum">Kurulum</a></li>
+      <li><a href="#ilk">İlk test dosyası</a></li>
+      <li><a href="#bulma">pytest testleri nasıl bulur?</a></li>
+      <li><a href="#cikti">Çıktıyı okumak</a></li>
+      <li><a href="#basarisiz">Başarısız test</a></li>
+      <li><a href="#iyi">İyi bir test</a></li>
+      <li><a href="#degerler">Hangi değerler?</a></li>
+      <li><a href="#raises">Hata bekleyen testler</a></li>
+      <li><a href="#approx">Ondalıklı sayılar</a></li>
+      <li><a href="#secmek">Seçerek çalıştırmak</a></li>
+      <li><a href="#mutasyon">Testin testi</a></li>
+      <li><a href="#hatalar">Sık hatalar</a></li>
+      <li><a href="#alistirma">Alıştırmalar</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <section class="step" id="neden">
+      <div class="step-head"><span class="num">01</span><h2>Neden pytest?</h2></div>
+      <p class="time">15 dakika</p>
+      <p>Python 101'de testleri kodun altına <code>assert</code> olarak yazdık. Aşağıdaki dosyada fonksiyonda bir hata var ve üç test yazılmış:</p>
+      <div class="cmd"><div class="cmd-bar">eski_testler.py<button class="copy" type="button">Kopyala</button></div><pre>def gecti_mi(ortalama):
+    return ortalama &gt; 60          <span class="c"># hata: &gt;= olmalıydı</span>
+
+
+assert gecti_mi(60) == True
+assert gecti_mi(75) == True
+assert gecti_mi(59) == False
+print("Tüm testler geçti")</pre></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python eski_testler.py</pre></div>
+      <div class="out">Traceback (most recent call last):
+  File "eski_testler.py", line 5, in &lt;module&gt;
+    assert gecti_mi(60) == True
+AssertionError</div>
+      <p>İlk <code>assert</code> yanlış çıktı ve program orada durdu. 75 ve 59 testleri <b>hiç çalışmadı</b>; onların geçip geçmediğini bilmiyoruz. Hata mesajı da yalnızca “yanlış” diyor, <code>gecti_mi(60)</code>'ın ne döndürdüğünü söylemiyor.</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th></th><th>Düz assert dosyası</th><th>pytest</th></tr></thead>
+        <tbody>
+          <tr><td>Bir test kırılınca</td><td>Program durur, sonraki testler çalışmaz</td><td>Her test ayrı çalışır, diğerleri devam eder</td></tr>
+          <tr><td>Sonuç</td><td>Ya “Tüm testler geçti” ya da ilk hata</td><td>Kaç test geçti, kaçı kaldı özeti</td></tr>
+          <tr><td>Hata mesajı</td><td><code>AssertionError</code></td><td>Beklenen ve gerçek değer yan yana</td></tr>
+          <tr><td>Kod ve test</td><td>Aynı dosyada</td><td>Ayrı dosyalarda</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note tip"><b>Testlerin içi değişmiyor.</b> pytest'te de testleri <code>assert</code> ile yazıyoruz. pytest yalnızca testleri bulur, tek tek çalıştırır ve raporlar. Geçen haftaki alıştırmada GitHub Actions'ta gördüğünüz <code>PASSED</code> / <code>FAILED</code> satırları da pytest'in çıktısıydı.</div>
+    </section>
+
+    <section class="step" id="kurulum">
+      <div class="step-head"><span class="num">02</span><h2>Kurulum</h2></div>
+      <p class="time">10 dakika</p>
+      <p>pytest, Python ile birlikte gelmez; <code>pip</code> ile kurulur. Terminalde:</p>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pip install pytest</pre></div>
+      <p>Kurulduğunu kontrol edin:</p>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest --version</pre></div>
+      <div class="out">pytest 9.x.x</div>
+      <div class="note warn"><b>Hep <code>python -m pytest</code> yazın.</b> Yalnızca <code>pytest</code> yazmak da çoğu zaman çalışır, ama Windows'ta sık sık “tanınmıyor” hatası verir. <code>python -m pytest</code> her bilgisayarda aynı şekilde çalışır. Python 101'de <code>python</code> yerine <code>py</code> kullanıyorsanız burada da <code>py -m pytest</code> yazın.</div>
+    </section>
+
+    <section class="step" id="ilk">
+      <div class="step-head"><span class="num">03</span><h2>İlk test dosyası</h2></div>
+      <p class="time">20 dakika</p>
+      <p>pytest'te kod ile testler <b>ayrı dosyalarda</b> durur. <code>pytest-deneme</code> adında bir klasör açın ve içine iki dosya oluşturun:</p>
+      <div class="cmd"><div class="cmd-bar">Klasör<button class="copy" type="button">Kopyala</button></div><pre>pytest-deneme/
+├── notlar.py          <span class="c">← test edilecek kod</span>
+└── test_notlar.py     <span class="c">← testler</span></pre></div>
+      <div class="cmd"><div class="cmd-bar">notlar.py<button class="copy" type="button">Kopyala</button></div><pre>def gecti_mi(ortalama):
+    return ortalama &gt;= 60
+
+
+def harf_notu(puan):
+    if puan &gt;= 85:
+        return "AA"
+    elif puan &gt;= 70:
+        return "BB"
+    elif puan &gt;= 60:
+        return "CC"
+    else:
+        return "FF"</pre></div>
+      <div class="cmd"><div class="cmd-bar">test_notlar.py<button class="copy" type="button">Kopyala</button></div><pre>from notlar import gecti_mi, harf_notu
+
+
+def test_yuksek_not_gecer():
+    assert gecti_mi(75) == True
+
+
+def test_tam_sinirda_gecer():
+    assert gecti_mi(60) == True
+
+
+def test_sinirin_altinda_kalir():
+    assert gecti_mi(59) == False
+
+
+def test_harf_notu_sinirlari():
+    assert harf_notu(85) == "AA"
+    assert harf_notu(84) == "BB"
+    assert harf_notu(60) == "CC"
+    assert harf_notu(59) == "FF"</pre></div>
+      <ul class="plain">
+        <li><code>from notlar import gecti_mi, harf_notu</code>: <code>notlar.py</code> dosyasındaki fonksiyonları bu dosyada kullanılabilir hale getirir.</li>
+        <li>Her test bir <b>fonksiyondur</b> ve adı <code>test_</code> ile başlar. Fonksiyonun içinde yine <code>assert</code> var.</li>
+        <li>Testleri sizin çağırmanız gerekmiyor, <code>print("Tüm testler geçti")</code> da gerekmiyor. Bunları pytest yapıyor.</li>
+      </ul>
+      <p>Terminal <code>pytest-deneme</code> klasöründeyken çalıştırın:</p>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest</pre></div>
+      <div class="out">============================= test session starts ==============================
+platform win32 -- Python 3.12.x, pytest-9.x.x, pluggy-1.x.x
+rootdir: C:\Users\ogrenci\pytest-deneme
+collected 4 items
+
+test_notlar.py ....                                                      [100%]
+
+============================== 4 passed in 0.01s ===============================</div>
+      <p><code>collected 4 items</code>: pytest dört test buldu. <code>test_notlar.py ....</code>: dosyadaki her test için bir nokta; nokta “geçti” demek. Son satır özet: dört test geçti.</p>
+    </section>
+
+    <section class="step" id="bulma">
+      <div class="step-head"><span class="num">04</span><h2>pytest testleri nasıl bulur?</h2></div>
+      <p class="time">10 dakika</p>
+      <p>pytest'e hangi testleri çalıştıracağını söylemediniz; kendisi buldu. Bunu <b>adlara</b> bakarak yapar:</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Ne</th><th>Kural</th><th>Bulunur</th><th>Bulunmaz</th></tr></thead>
+        <tbody>
+          <tr><td>Dosya</td><td><code>test_</code> ile başlar ya da <code>_test.py</code> ile biter</td><td><code>test_notlar.py</code></td><td><code>testler.py</code>, <code>notlar.py</code></td></tr>
+          <tr><td>Fonksiyon</td><td><code>test_</code> ile başlar</td><td><code>test_tam_sinirda_gecer</code></td><td><code>sinir_kontrolu</code></td></tr>
+          <tr><td>Klasör</td><td>Komutu çalıştırdığınız klasör ve alt klasörleri</td><td colspan="2">Başka bir klasördeyseniz testleriniz bulunmaz</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note warn"><b>Adı yanlış olan test sessizce atlanır.</b> pytest size “bu fonksiyonu atladım” demez. Aşağıdaki dosyada ikinci fonksiyonun beklentisi yanlış, ama adı <code>test_</code> ile başlamadığı için hiç çalışmaz:</div>
+      <div class="cmd"><div class="cmd-bar">test_ad.py<button class="copy" type="button">Kopyala</button></div><pre>from notlar import gecti_mi
+
+
+def test_yuksek_not_gecer():
+    assert gecti_mi(75) == True
+
+
+def sinir_kontrolu():                 <span class="c"># test_ ile başlamıyor!</span>
+    assert gecti_mi(60) == False      <span class="c"># yanlış beklenti, ama hiç çalışmayacak</span></pre></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest test_ad.py -v</pre></div>
+      <div class="out">test_ad.py::test_yuksek_not_gecer PASSED                                 [100%]
+
+============================== 1 passed in 0.00s ===============================</div>
+      <p>İki test yazdınız, pytest bir tane çalıştırdı ve sonuç yeşil. Test sayısı beklediğinizden azsa önce adlara bakın.</p>
+    </section>
+
+    <section class="step" id="cikti">
+      <div class="step-head"><span class="num">05</span><h2>Çıktıyı okumak</h2></div>
+      <p class="time">10 dakika</p>
+      <p><code>-v</code> (verbose, ayrıntılı) seçeneği her testi adıyla ayrı satırda gösterir. Hangi testin geçip hangisinin kaldığını görmek için en kullanışlı hali budur:</p>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest -v</pre></div>
+      <div class="out">collecting ... collected 4 items
+
+test_notlar.py::test_yuksek_not_gecer PASSED                             [ 25%]
+test_notlar.py::test_tam_sinirda_gecer PASSED                            [ 50%]
+test_notlar.py::test_sinirin_altinda_kalir PASSED                        [ 75%]
+test_notlar.py::test_harf_notu_sinirlari PASSED                          [100%]
+
+============================== 4 passed in 0.00s ===============================</div>
+      <p>Satır başındaki <code>test_notlar.py::test_yuksek_not_gecer</code> testin tam adıdır: dosya, iki tane iki nokta, fonksiyon. Sağdaki yüzde ilerlemeyi gösterir.</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Kısa</th><th><code>-v</code> ile</th><th>Anlamı</th></tr></thead>
+        <tbody>
+          <tr><td><code>.</code></td><td><code>PASSED</code></td><td>Test geçti</td></tr>
+          <tr><td><code>F</code></td><td><code>FAILED</code></td><td>Test başarısız: bir <code>assert</code> yanlış çıktı ya da test çalışırken beklenmeyen bir hata oluştu</td></tr>
+          <tr><td><code>E</code></td><td><code>ERROR</code></td><td>Test hiç başlatılamadı; çoğunlukla dosya içe aktarılamadı (bkz. <a href="#hatalar">Sık hatalar</a>)</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="step" id="basarisiz">
+      <div class="step-head"><span class="num">06</span><h2>Başarısız test</h2></div>
+      <p class="time">20 dakika</p>
+      <p><code>notlar.py</code>'de bilerek bir hata yapın: <code>&gt;=</code> yerine <code>&gt;</code> yazın.</p>
+      <div class="cmd"><div class="cmd-bar">notlar.py (hatalı)<button class="copy" type="button">Kopyala</button></div><pre>def gecti_mi(ortalama):
+    return ortalama &gt; 60          <span class="c"># hata: &gt;= olmalıydı</span></pre></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest</pre></div>
+      <div class="out">collected 4 items
+
+test_notlar.py .F..                                                      [100%]
+
+=================================== FAILURES ===================================
+____________________________ test_tam_sinirda_gecer ____________________________
+
+    def test_tam_sinirda_gecer():
+&gt;       assert gecti_mi(60) == True
+E       assert False == True
+E        +  where False = gecti_mi(60)
+
+test_notlar.py:9: AssertionError
+=========================== short test summary info ============================
+FAILED test_notlar.py::test_tam_sinirda_gecer - assert False == True
+========================= 1 failed, 3 passed in 0.01s ==========================</div>
+      <p>Bu çıktıyı yukarıdan aşağı okuyun:</p>
+      <ol class="plain">
+        <li><code>.F..</code>: dört testten ikincisi kaldı, diğer üçü <b>yine çalıştı</b> ve geçti. Düz assert dosyasından farkı bu.</li>
+        <li><code>FAILURES</code> başlığının altında kalan testin adı: <code>test_tam_sinirda_gecer</code>.</li>
+        <li><code>&gt;</code> işaretli satır: testin kırıldığı satır.</li>
+        <li><code>E assert False == True</code>: sol taraf fonksiyondan <b>gelen</b> değer, sağ taraf sizin <b>beklediğiniz</b> değer.</li>
+        <li><code>+ where False = gecti_mi(60)</code>: <code>False</code> değerinin nereden geldiği.</li>
+        <li><code>test_notlar.py:9</code>: dosya ve satır numarası.</li>
+        <li>En altta kısa özet: 1 kaldı, 3 geçti.</li>
+      </ol>
+      <div class="note tip"><b>Hata mesajı yazmanıza gerek yok.</b> Python 101'de <code>assert ..., "60 alan öğrenci geçmeli"</code> diye mesaj eklemiştik. pytest iki tarafın değerini zaten gösteriyor. İsterseniz yine ekleyebilirsiniz, ama iyi bir test adı çoğu zaman yeterlidir.</div>
+      <p>Devam etmeden önce <code>notlar.py</code>'yi düzeltip (<code>&gt;=</code>) testlerin yine geçtiğini görün.</p>
+    </section>
+
+    <section class="step" id="iyi">
+      <div class="step-head"><span class="num">07</span><h2>İyi bir test nasıl yazılır?</h2></div>
+      <p class="time">15 dakika</p>
+      <h3>Adı, neyi test ettiğini söylesin</h3>
+      <p>Test kırıldığında ilk gördüğünüz şey adıdır. Ad, kodu açmadan neyin bozulduğunu anlatmalı.</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Kötü</th><th>İyi</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_1</code></td><td><code>test_tam_sinirda_gecer</code></td></tr>
+          <tr><td><code>test_gecti_mi</code></td><td><code>test_sinirin_altinda_kalir</code></td></tr>
+          <tr><td><code>test_hata</code></td><td><code>test_bos_listede_hata_verir</code></td></tr>
+        </tbody>
+      </table></div>
+      <h3>Hazırla, çalıştır, kontrol et</h3>
+      <p>Uzun testleri üç parçaya ayırmak okumayı kolaylaştırır. İngilizce kaynaklarda bu düzenin adı <b>Arrange, Act, Assert</b> (AAA).</p>
+      <div class="cmd"><div class="cmd-bar">test_aaa.py<button class="copy" type="button">Kopyala</button></div><pre>from notlar import harf_notu
+
+
+def test_sinifin_harf_notlari():
+    <span class="c"># Hazırla</span>
+    puanlar = [92, 74, 61, 40]
+
+    <span class="c"># Çalıştır</span>
+    harfler = []
+    for p in puanlar:
+        harfler.append(harf_notu(p))
+
+    <span class="c"># Kontrol et</span>
+    assert harfler == ["AA", "BB", "CC", "FF"]</pre></div>
+      <div class="out">1 passed</div>
+      <h3>Beklenen değeri koddan değil, şartnameden alın</h3>
+      <p>Bir fonksiyonun ne döndürmesi gerektiğini <b>şartname</b> söyler: ödev metni, müşterinin isteği, fonksiyonun üstündeki açıklama. Fonksiyonu çalıştırıp çıkan sonucu teste kopyalarsanız, kod hatalıysa testiniz de hatalı olur ve hatayı onaylamış olursunuz.</p>
+      <ul class="plain">
+        <li>Her test tek bir durumu denesin. Kırıldığında hangi durumun bozulduğu adından anlaşılsın.</li>
+        <li>Testler birbirine bağlı olmasın. Her test tek başına çalıştırıldığında da geçmeli.</li>
+      </ul>
+    </section>
+
+    <section class="step" id="degerler">
+      <div class="step-head"><span class="num">08</span><h2>Hangi değerleri test etmeli?</h2></div>
+      <p class="time">25 dakika</p>
+      <p>Bir fonksiyonu her olası değerle deneyemeyiz. İki fikir hangi değerleri seçeceğimizi söyler:</p>
+      <ul class="plain">
+        <li><b>Eşdeğerlik sınıfları:</b> Girdileri, fonksiyonun aynı şekilde davrandığı gruplara ayırın. Her gruptan bir temsilci yeter; 25 derece ile 26 derece aynı şeyi test eder.</li>
+        <li><b>Sınır değerleri:</b> Hatalar en çok grupların sınırında çıkar (<code>&lt;</code> ile <code>&lt;=</code> karışır). Her sınırın iki tarafını da deneyin.</li>
+      </ul>
+      <p>Örnek: suyun sıcaklığa göre hali.</p>
+      <div class="cmd"><div class="cmd-bar">su.py<button class="copy" type="button">Kopyala</button></div><pre>def su_durumu(sicaklik):
+    if sicaklik &lt; 0:
+        return "buz"
+    elif sicaklik &lt; 100:
+        return "sıvı"
+    else:
+        return "buhar"</pre></div>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Sınıf</th><th>Aralık</th><th>Temsilci</th><th>Sınır değerleri</th></tr></thead>
+        <tbody>
+          <tr><td>buz</td><td>0'ın altı</td><td><code>-10</code></td><td><code>-1</code></td></tr>
+          <tr><td>sıvı</td><td>0 – 99</td><td><code>25</code></td><td><code>0</code>, <code>99</code></td></tr>
+          <tr><td>buhar</td><td>100 ve üstü</td><td><code>150</code></td><td><code>100</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Tablodaki her hücre bir test olur:</p>
+      <div class="cmd"><div class="cmd-bar">test_su.py<button class="copy" type="button">Kopyala</button></div><pre>from su import su_durumu
+
+
+def test_eksi_sicaklikta_buz():
+    assert su_durumu(-10) == "buz"
+
+
+def test_sifirin_hemen_altinda_buz():
+    assert su_durumu(-1) == "buz"
+
+
+def test_sifirda_sivi():
+    assert su_durumu(0) == "sıvı"
+
+
+def test_oda_sicakliginda_sivi():
+    assert su_durumu(25) == "sıvı"
+
+
+def test_yuzun_hemen_altinda_sivi():
+    assert su_durumu(99) == "sıvı"
+
+
+def test_yuzde_buhar():
+    assert su_durumu(100) == "buhar"
+
+
+def test_yuksek_sicaklikta_buhar():
+    assert su_durumu(150) == "buhar"</pre></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest test_su.py -v</pre></div>
+      <div class="out">collecting ... collected 7 items
+
+test_su.py::test_eksi_sicaklikta_buz PASSED                              [ 14%]
+test_su.py::test_sifirin_hemen_altinda_buz PASSED                        [ 28%]
+test_su.py::test_sifirda_sivi PASSED                                     [ 42%]
+test_su.py::test_oda_sicakliginda_sivi PASSED                            [ 57%]
+test_su.py::test_yuzun_hemen_altinda_sivi PASSED                         [ 71%]
+test_su.py::test_yuzde_buhar PASSED                                      [ 85%]
+test_su.py::test_yuksek_sicaklikta_buhar PASSED                          [100%]
+
+============================== 7 passed in 0.01s ===============================</div>
+      <div class="note tip"><b>Yalnızca temsilcilerle</b> (-10, 25, 150) yazılmış üç test de yeşil olurdu, ama <code>&lt; 100</code> yerine <code>&lt;= 100</code> yazılmış bir hatayı bulamazdı. Bunu <a href="#mutasyon">12. bölümde</a> deneyeceğiz.</div>
+    </section>
+
+    <section class="step" id="raises">
+      <div class="step-head"><span class="num">09</span><h2>Hata bekleyen testler: pytest.raises</h2></div>
+      <p class="time">25 dakika</p>
+      <h3>Önce: fonksiyon nasıl hata fırlatır?</h3>
+      <p>Bazı girdiler anlamsızdır: toplamı 0 olan bir şeyin yüzdesi hesaplanamaz. Böyle bir durumda fonksiyon yanlış bir sayı döndürmek yerine <b>hata fırlatmalıdır</b>. Bunu <code>raise</code> ile yaparız. <code>ValueError</code>, “bu değer geçersiz” anlamına gelen hazır bir hata türüdür.</p>
+      <div class="cmd"><div class="cmd-bar">yuzde.py<button class="copy" type="button">Kopyala</button></div><pre>def yuzde(kisim, toplam):
+    if toplam &lt;= 0:
+        raise ValueError("toplam pozitif olmalı")
+    return kisim / toplam * 100</pre></div>
+      <div class="cmd"><div class="cmd-bar">raise_dene.py<button class="copy" type="button">Kopyala</button></div><pre>from yuzde import yuzde
+
+print(yuzde(1, 4))
+print(yuzde(5, 0))
+print("Bu satır hiç çalışmaz")</pre></div>
+      <div class="out">25.0
+Traceback (most recent call last):
+  File "raise_dene.py", line 4, in &lt;module&gt;
+    print(yuzde(5, 0))
+  File "yuzde.py", line 3, in yuzde
+    raise ValueError("toplam pozitif olmalı")
+ValueError: toplam pozitif olmalı</div>
+      <p><code>raise</code> çalıştığı anda fonksiyon durur, <code>return</code> satırına hiç gelinmez. Hatayı yakalayan kimse yoksa program da durur.</p>
+
+      <h3>Hatayı test etmek</h3>
+      <p>“Toplam 0 olunca <code>ValueError</code> fırlatmalı” da şartnamenin bir parçası; bunu da test etmeliyiz. <code>assert</code> burada işe yaramaz, çünkü fonksiyon bir değer döndürmüyor. pytest'in <code>pytest.raises</code> aracı tam bunun için var:</p>
+      <div class="cmd"><div class="cmd-bar">test_yuzde.py<button class="copy" type="button">Kopyala</button></div><pre>import pytest
+
+from yuzde import yuzde
+
+
+def test_ceyrek():
+    assert yuzde(1, 4) == 25.0
+
+
+def test_sifir_toplam_hata_verir():
+    with pytest.raises(ValueError):
+        yuzde(5, 0)
+
+
+def test_negatif_toplam_hata_verir():
+    with pytest.raises(ValueError, match="pozitif"):
+        yuzde(5, -10)</pre></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest test_yuzde.py -v</pre></div>
+      <div class="out">collecting ... collected 3 items
+
+test_yuzde.py::test_ceyrek PASSED                                        [ 33%]
+test_yuzde.py::test_sifir_toplam_hata_verir PASSED                       [ 66%]
+test_yuzde.py::test_negatif_toplam_hata_verir PASSED                     [100%]
+
+============================== 3 passed in 0.00s ===============================</div>
+      <ul class="plain">
+        <li><code>import pytest</code>: <code>pytest.raises</code>'ı kullanabilmek için dosyanın başına yazılır.</li>
+        <li><code>with pytest.raises(ValueError):</code> altındaki girintili satır <code>ValueError</code> fırlatırsa test <b>geçer</b>; fırlatmazsa test <b>kalır</b>.</li>
+        <li><code>match="pozitif"</code>: hata mesajının içinde bu kelimenin geçtiğini de kontrol eder. İsteğe bağlıdır.</li>
+      </ul>
+      <p>Fonksiyonda negatif toplamı unutan bir hata olsaydı:</p>
+      <div class="cmd"><div class="cmd-bar">yuzde.py (hatalı)<button class="copy" type="button">Kopyala</button></div><pre>def yuzde(kisim, toplam):
+    if toplam == 0:                   <span class="c"># hata: negatif toplamı kaçırıyor</span>
+        raise ValueError("toplam pozitif olmalı")
+    return kisim / toplam * 100</pre></div>
+      <div class="out">=================================== FAILURES ===================================
+________________________ test_negatif_toplam_hata_verir ________________________
+
+    def test_negatif_toplam_hata_verir():
+&gt;       with pytest.raises(ValueError, match="pozitif"):
+E       Failed: DID NOT RAISE ValueError
+
+test_yuzde.py:16: Failed
+=========================== short test summary info ============================
+FAILED test_yuzde.py::test_negatif_toplam_hata_verir - Failed: DID NOT RAISE ...
+========================= 1 failed, 2 passed in 0.01s ==========================</div>
+      <p><code>DID NOT RAISE</code>: “hata bekliyordum ama fırlatılmadı.” Fonksiyon <code>yuzde(5, -10)</code> için sessizce <code>-50.0</code> döndürdü. Devam etmeden önce <code>yuzde.py</code>'yi eski haline (<code>toplam &lt;= 0</code>) getirin.</p>
+    </section>
+
+    <section class="step" id="approx">
+      <div class="step-head"><span class="num">10</span><h2>Ondalıklı sayılar: pytest.approx</h2></div>
+      <p class="time">10 dakika</p>
+      <p>Bilgisayar ondalıklı sayıları her zaman tam olarak saklayamaz:</p>
+      <div class="cmd"><div class="cmd-bar">Python<button class="copy" type="button">Kopyala</button></div><pre>print(0.1 + 0.2)
+print(0.1 + 0.2 == 0.3)</pre></div>
+      <div class="out">0.30000000000000004
+False</div>
+      <p>Bu yüzden ondalıklı sonuçları <code>==</code> ile karşılaştırmak test kırar. <code>test_yuzde.py</code>'ye şunu ekleyin:</p>
+      <div class="cmd"><div class="cmd-bar">test_yuzde.py (ekleyin)<button class="copy" type="button">Kopyala</button></div><pre>def test_ucte_bir():
+    assert yuzde(1, 3) == 33.33</pre></div>
+      <div class="out">&gt;       assert yuzde(1, 3) == 33.33
+E       assert 33.33333333333333 == 33.33
+E        +  where 33.33333333333333 = yuzde(1, 3)</div>
+      <p>Fonksiyon doğru, beklenti de doğru; ama iki sayı birebir aynı değil. <code>pytest.approx</code> “yaklaşık olarak eşit” demektir. <code>abs=0.01</code> ise en fazla 0.01 farka izin verir:</p>
+      <div class="cmd"><div class="cmd-bar">test_yuzde.py (düzeltilmiş)<button class="copy" type="button">Kopyala</button></div><pre>def test_ucte_bir():
+    assert yuzde(1, 3) == pytest.approx(33.33, abs=0.01)</pre></div>
+      <div class="out">4 passed</div>
+      <div class="note tip"><b>Ne zaman kullanılır?</b> Sonucu ondalıklı olabilecek her hesapta: ortalama, yüzde, KDV, faiz. Sonuç tam sayıysa (<code>25.0</code>, <code>70</code>) <code>==</code> yeterlidir.</div>
+    </section>
+
+    <section class="step" id="secmek">
+      <div class="step-head"><span class="num">11</span><h2>Seçerek çalıştırmak</h2></div>
+      <p class="time">10 dakika</p>
+      <p>Klasörde artık üç test dosyası var. Yalnızca <code>python -m pytest</code> yazarsanız hepsi çalışır:</p>
+      <div class="out">collected 15 items
+
+test_notlar.py ....                                                      [ 26%]
+test_su.py .......                                                       [ 73%]
+test_yuzde.py ....                                                       [100%]
+
+============================== 15 passed in 0.01s ==============================</div>
+      <p>Testler çoğaldıkça yalnızca üzerinde çalıştığınız kısmı çalıştırmak istersiniz:</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Komut</th><th>Ne çalışır?</th></tr></thead>
+        <tbody>
+          <tr><td><code>python -m pytest</code></td><td>Klasördeki bütün testler</td></tr>
+          <tr><td><code>python -m pytest test_su.py</code></td><td>Yalnızca bu dosyadakiler</td></tr>
+          <tr><td><code>python -m pytest test_su.py::test_yuzde_buhar</code></td><td>Yalnızca bu test</td></tr>
+          <tr><td><code>python -m pytest -k sivi</code></td><td>Adında <code>sivi</code> geçen testler</td></tr>
+          <tr><td><code>python -m pytest -x</code></td><td>İlk başarısız testte durur</td></tr>
+          <tr><td><code>python -m pytest -v</code></td><td>Her testi ayrı satırda gösterir; diğerleriyle birlikte de kullanılır</td></tr>
+        </tbody>
+      </table></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest -v -k sivi</pre></div>
+      <div class="out">collecting ... collected 15 items / 12 deselected / 3 selected
+
+test_su.py::test_sifirda_sivi PASSED                                     [ 33%]
+test_su.py::test_oda_sicakliginda_sivi PASSED                            [ 66%]
+test_su.py::test_yuzun_hemen_altinda_sivi PASSED                         [100%]
+
+======================= 3 passed, 12 deselected in 0.01s =======================</div>
+      <p><code>deselected</code>: seçilmeyen, bu sefer çalıştırılmayan testler.</p>
+    </section>
+
+    <section class="step" id="mutasyon">
+      <div class="step-head"><span class="num">12</span><h2>Testin testi: bilerek hata koymak</h2></div>
+      <p class="time">20 dakika</p>
+      <p>Bütün testler yeşil. Peki testleriniz <b>iyi</b> mi? Hiç test yazmasanız da kırmızı bir şey görmezdiniz. Yeşil, yalnızca “testlerin bulabildiği bir hata yok” demektir.</p>
+      <p>Bunu ölçmenin yolu: koda <b>bilerek küçük bir hata</b> koyun ve testlerin onu yakalayıp yakalamadığına bakın. <code>su.py</code>'de <code>sicaklik &lt; 100</code> yerine <code>sicaklik &lt;= 100</code> yazın:</p>
+      <div class="cmd"><div class="cmd-bar">su.py (hatalı)<button class="copy" type="button">Kopyala</button></div><pre>def su_durumu(sicaklik):
+    if sicaklik &lt; 0:
+        return "buz"
+    elif sicaklik &lt;= 100:             <span class="c"># hata: &lt; olmalıydı</span>
+        return "sıvı"
+    else:
+        return "buhar"</pre></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest test_su.py</pre></div>
+      <div class="out">collected 7 items
+
+test_su.py .....F.                                                       [100%]
+
+=================================== FAILURES ===================================
+_______________________________ test_yuzde_buhar _______________________________
+
+    def test_yuzde_buhar():
+&gt;       assert su_durumu(100) == "buhar"
+E       AssertionError: assert 'sıvı' == 'buhar'
+E
+E         - buhar
+E         + sıvı
+
+test_su.py:25: AssertionError
+=========================== short test summary info ============================
+FAILED test_su.py::test_yuzde_buhar - AssertionError: assert 'sıvı' == 'buhar'
+========================= 1 failed, 6 passed in 0.01s ==========================</div>
+      <p>Hatayı yalnızca tam sınırdaki <code>test_yuzde_buhar</code> yakaladı. (<code>- buhar</code> beklenen, <code>+ sıvı</code> gelen değer.) O test olmasaydı, 150 derece testi bu hatayı görmeyecek ve her şey yeşil kalacaktı.</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Koda konan hata</th><th>Yakalayan test</th></tr></thead>
+        <tbody>
+          <tr><td><code>sicaklik &lt; 0</code> → <code>sicaklik &lt;= 0</code></td><td><code>test_sifirda_sivi</code></td></tr>
+          <tr><td><code>sicaklik &lt; 100</code> → <code>sicaklik &lt;= 100</code></td><td><code>test_yuzde_buhar</code></td></tr>
+          <tr><td><code>sicaklik &lt; 100</code> → <code>sicaklik &lt; 99</code></td><td><code>test_yuzun_hemen_altinda_sivi</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Bu yöntemin adı <b>mutasyon testi</b>: koda küçük değişiklikler (mutasyonlar) yapılır, iyi bir test takımı her birini yakalar. Yakalanmayan bir mutasyon size eksik testi gösterir. Bu haftaki alıştırma, testlerinizi tam olarak bu şekilde ölçüyor.</p>
+      <p>Denedikten sonra <code>su.py</code>'yi eski haline getirmeyi unutmayın.</p>
+    </section>
+
+    <section class="step" id="hatalar">
+      <div class="step-head"><span class="num">13</span><h2>Sık karşılaşılan hatalar</h2></div>
+      <p class="time">Başvuru bölümü</p>
+      <details class="err"><summary>No module named pytest</summary><div class="body"><p>pytest kurulu değil ya da başka bir Python'a kurulmuş. <code>python -m pip install pytest</code> komutunu, testleri çalıştırdığınız <code>python</code> ile çalıştırın.</p></div></details>
+      <details class="err"><summary>'pytest' is not recognized / pytest: command not found</summary><div class="body"><p>Komutu yalnızca <code>pytest</code> diye yazdınız. <code>python -m pytest</code> yazın.</p></div></details>
+      <details class="err"><summary>collected 0 items / no tests ran</summary><div class="body"><p>pytest hiç test bulamadı. Dosya adı <code>test_</code> ile mi başlıyor? Fonksiyon adları <code>test_</code> ile mi başlıyor? Terminal doğru klasörde mi? (<a href="#bulma">4. bölüm</a>)</p></div></details>
+      <details class="err"><summary>ERROR collecting … ModuleNotFoundError: No module named 'notlar'</summary><div class="body"><p>Test dosyası <code>from notlar import …</code> diyor ama <code>notlar.py</code> bulunamadı. Test dosyası ile kod dosyası aynı klasörde olmalı ve pytest'i o klasörden çalıştırmalısınız. Dosya adında yazım hatası da olabilir.</p>
+<div class="out">_____________________ ERROR collecting test/test_notlar.py _____________________
+ImportError while importing test module 'test/test_notlar.py'.
+...
+E   ModuleNotFoundError: No module named 'notlar'
+=========================== short test summary info ============================
+ERROR test/test_notlar.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!</div></div></details>
+      <details class="err"><summary>import file mismatch</summary><div class="body"><p>Farklı klasörlerde aynı adlı iki test dosyası var (ör. <code>hafta02/test_alistirma.py</code> ve <code>hafta03/test_alistirma.py</code>) ve pytest'i üst klasörden çalıştırdınız. Önce <code>cd hafta03</code> ile o haftanın klasörüne girin.</p></div></details>
+      <details class="err"><summary>Test geçiyor ama kodda hata var</summary><div class="body"><p>En sinsi hata: <code>assert</code> yazmayı unutmak. Aşağıdaki test hiçbir şeyi kontrol etmez, karşılaştırmanın sonucunu atıp geçer; fonksiyon hatalı olsa da yeşil görünür.</p>
+<div class="cmd"><div class="cmd-bar">test_unut.py<button class="copy" type="button">Kopyala</button></div><pre>def test_tam_sinirda_gecer():
+    gecti_mi(60) == True          <span class="c"># assert unutuldu!</span></pre></div>
+<div class="out">test_unut.py .                                                           [100%]
+
+============================== 1 passed in 0.00s ===============================</div></div></details>
+      <details class="err"><summary>Failed: DID NOT RAISE ValueError</summary><div class="body"><p><code>pytest.raises</code> bir hata bekliyordu ama fonksiyon hata fırlatmadan bir değer döndürdü. Ya fonksiyonda kontrol eksik ya da testte verdiğiniz girdi aslında geçerli. (<a href="#raises">9. bölüm</a>)</p></div></details>
+      <details class="err"><summary>assert 33.33333333333333 == 33.33</summary><div class="body"><p>Ondalıklı sayıları <code>==</code> ile karşılaştırdınız. <code>pytest.approx</code> kullanın. (<a href="#approx">10. bölüm</a>)</p></div></details>
+      <details class="err"><summary>NameError: name 'pytest' is not defined</summary><div class="body"><p><code>pytest.raises</code> ya da <code>pytest.approx</code> kullandınız ama dosyanın başına <code>import pytest</code> yazmadınız.</p></div></details>
+    </section>
+
+    <section class="step" id="alistirma">
+      <div class="step-head"><span class="num">14</span><h2>Alıştırmalar</h2></div>
+      <p class="time">İlk ikisi 10–15 dakika, haftanın alıştırması 1 saat</p>
+
+      <h3>1. Eksik testi bulun</h3>
+      <p>Şartname: <b>şifre en az 8 karakter olmalı.</b> Aşağıdaki fonksiyonda bir hata var, ama yazılmış iki test de geçiyor. Hatayı yakalayan testi ekleyin; sonra fonksiyonu düzeltip bütün testlerin geçtiğini görün.</p>
+      <div class="cmd"><div class="cmd-bar">sifre.py<button class="copy" type="button">Kopyala</button></div><pre>def sifre_gecerli_mi(sifre):
+    return len(sifre) &gt; 8</pre></div>
+      <div class="cmd"><div class="cmd-bar">test_sifre.py<button class="copy" type="button">Kopyala</button></div><pre>from sifre import sifre_gecerli_mi
+
+
+def test_kisa_sifre_gecersiz():
+    assert sifre_gecerli_mi("kisa") == False
+
+
+def test_uzun_sifre_gecerli():
+    assert sifre_gecerli_mi("uzunsifre123") == True</pre></div>
+      <details class="err"><summary>Çözümü göster</summary><div class="body"><p>Hata sınırda: tam 8 karakterlik şifre geçerli olmalı ama fonksiyon <code>False</code> döndürüyor. Sınırın iki tarafını da test edin:</p><div class="cmd"><div class="cmd-bar">test_sifre.py (eklenecekler)<button class="copy" type="button">Kopyala</button></div><pre>def test_tam_sekiz_karakter_gecerli():
+    assert sifre_gecerli_mi("12345678") == True
+
+
+def test_yedi_karakter_gecersiz():
+    assert sifre_gecerli_mi("1234567") == False</pre></div><p>İlk test kırmızı olur. Fonksiyonu <code>len(sifre) &gt;= 8</code> yapınca dört test de geçer.</p></div></details>
+
+      <h3>2. Hata bekleyen test</h3>
+      <p>Şartname: <code>kdv_ekle(fiyat)</code> fiyata %20 KDV ekler; fiyat negatifse <code>ValueError</code> fırlatır. En az dört test yazın: sıradan fiyat, kuruşlu fiyat (<code>pytest.approx</code> ile), 0 TL ve negatif fiyat (<code>pytest.raises</code> ile).</p>
+      <div class="cmd"><div class="cmd-bar">kdv.py<button class="copy" type="button">Kopyala</button></div><pre>def kdv_ekle(fiyat):
+    if fiyat &lt; 0:
+        raise ValueError("fiyat negatif olamaz")
+    return fiyat * 1.20</pre></div>
+      <details class="err"><summary>Çözümü göster</summary><div class="body"><div class="cmd"><div class="cmd-bar">test_kdv.py<button class="copy" type="button">Kopyala</button></div><pre>import pytest
+
+from kdv import kdv_ekle
+
+
+def test_yuz_lira():
+    assert kdv_ekle(100) == pytest.approx(120)
+
+
+def test_kusuratli_fiyat():
+    assert kdv_ekle(19.99) == pytest.approx(23.99, abs=0.01)
+
+
+def test_sifir_fiyat():
+    assert kdv_ekle(0) == 0
+
+
+def test_negatif_fiyat_hata_verir():
+    with pytest.raises(ValueError):
+        kdv_ekle(-5)</pre></div><div class="out">4 passed</div></div></details>
+
+      <h3>3. Haftanın alıştırması: testleri siz yazın</h3>
+      <p>Geçen hafta testler hazırdı, kodu siz yazdınız. Bu hafta tersi: <code>hafta03/alistirma.py</code>'deki kod doğru çalışıyor, siz onun testlerini <code>hafta03/test_alistirma.py</code>'ye yazacaksınız. Üç fonksiyon var: <code>kargo_ucreti</code>, <code>bilet_fiyati</code>, <code>ortalama</code>.</p>
+      <ol class="plain">
+        <li>Önce elinizdeki değişiklikleri commit'leyip push edin. Sonra GitHub'da kendi fork'unuzda <b>Sync fork → Update branch</b> düğmesine basın.</li>
+        <li>Bilgisayarınızda yeni haftayı alın ve klasöre girin:
+          <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>git pull
+cd hafta03</pre></div></li>
+        <li><code>alistirma.py</code>'yi okuyun. Her fonksiyonun üstündeki açıklama şartnamedir; testlerinizi ona göre yazın, koda bakarak değil.</li>
+        <li>Her fonksiyon için eşdeğerlik sınıflarını ve sınırları çıkarın (<a href="#degerler">8. bölüm</a>), testlerinizi yazın ve çalıştırın:
+          <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest -v</pre></div></li>
+        <li>Bitince gönderin ve fork'unuzun <b>Actions</b> sekmesinde <code>hafta03</code> satırına bakın:
+          <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>git add .
+git commit -m "hafta03 testleri"
+git push</pre></div></li>
+      </ol>
+      <p>Klasördeki <code>test_hatali_surumler.py</code> dosyası, <code>alistirma.py</code>'ye bilerek hata koyarak 8 bozuk sürüm üretir ve sizin testlerinizi her birine karşı çalıştırır (<a href="#mutasyon">12. bölüm</a>). Başta çıktı şöyle görünür:</p>
+      <div class="out">test_alistirma.py::test_kargo_buyuk_sipariste_ucretsiz PASSED            [ 11%]
+test_hatali_surumler.py::test_hatali_surum_yakalanmali[kargo-1] FAILED   [ 22%]
+...
+____________________ test_hatali_surum_yakalanmali[kargo-1] ____________________
+Testleriniz bu hatalı sürümü yakalayamadı. İpucu: kargo_ucreti: ücretsiz kargo sınırını tam sınırda denediniz mi?</div>
+      <div class="note tip"><b>Hedef:</b> kendi testlerinizin hepsi geçsin ve 8 bozuk sürümün hepsi en az bir testinizde yakalansın. Kırmızı her satırın altındaki ipucunu okuyun ve o durumu deneyen bir test ekleyin.</div>
+    </section>
+
+  </main>
+</div>
+
+<footer>Yazılım Kalite Güvencesi ve Testi · pytest 101. Örneklerin tamamı pytest 9 ile çalıştırılarak doğrulanmıştır.</footer>
+
+<script>
+(function(){
+  document.querySelectorAll(".copy").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var pre=btn.closest(".cmd").querySelector("pre");
+      var text=pre.innerText;
+      function done(msg){btn.textContent=msg;setTimeout(function(){btn.textContent="Kopyala"},1600)}
+      function fallback(){var r=document.createRange();r.selectNodeContents(pre);var s=getSelection();s.removeAllRanges();s.addRange(r);done("Seçildi, Ctrl+C")}
+      try{navigator.clipboard.writeText(text).then(function(){done("Kopyalandı")},fallback)}catch(e){fallback()}
+    });
+  });
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'))});
+  function spy(){
+    var y=window.scrollY+120, cur=0;
+    secs.forEach(function(s,i){if(s&&s.offsetTop<=y)cur=i});
+    links.forEach(function(a,i){a.classList.toggle('active',i===cur)});
+  }
+  window.addEventListener('scroll',spy,{passive:true}); spy();
+})();
+</script>
+</body>
+</html>

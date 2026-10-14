@@ -140,7 +140,7 @@ html{scroll-behavior:smooth}
 <body>
 <a class="home-btn" href="index.html">← Ana sayfa</a>
 <header class="top">
-  <p class="course">Yazılım Kalite Güvencesi ve Testi · 4. hafta</p>
+  <p class="course">Yazılım Kalite Güvencesi ve Testi · 5. hafta</p>
   <h1>pytest 102: daha az tekrar, daha çok kapsam</h1>
   <p class="lede">pytest 101'de her test için ayrı bir fonksiyon yazdık. Bu sayfada aynı testleri daha kısa yazmayı (<b>parametrize</b>) ve testlerin kodun ne kadarını çalıştırdığını ölçmeyi (<b>coverage</b>) öğreniyoruz. Sonda kısa bir <b>hypothesis</b> girişi var. Örnekleri sırayla kendi bilgisayarınızda çalıştırın.</p>
   <div class="meta"><span>Süre: <b>2 saat, bölüm bölüm</b></span><span>Gerekenler: <b>pytest 101, pytest-deneme klasörünüz</b></span></div>
@@ -560,19 +560,19 @@ kargo.py       7      0      4      0   100%
 6 passed</div><p>Yalnızca <code>-1</code> testi eklenseydi de kapsam %100 olurdu; <code>&gt;= 500</code> hatasını <code>(500, 1)</code> satırı yakalar.</p></div></details>
 
       <h3>3. Haftanın alıştırması: Kapsam ve Parametrize</h3>
-      <p>Geçen haftaki gibi <code>hafta04/alistirma.py</code>'deki kod doğru, testlerini siz yazıyorsunuz. Üç fonksiyon var: <code>indirim_orani</code>, <code>sepet_toplami</code> ve <code>en_pahali_urun</code>. Sepet, sözlüklerden oluşan bir liste (<a href="#sozluk">5. bölüm</a>).</p>
+      <p>Geçen haftaki gibi <code>hafta05/alistirma.py</code>'deki kod doğru, testlerini siz yazıyorsunuz. Üç fonksiyon var: <code>indirim_orani</code>, <code>sepet_toplami</code> ve <code>en_pahali_urun</code>. Sepet, sözlüklerden oluşan bir liste (<a href="#sozluk">5. bölüm</a>).</p>
       <ol class="plain">
         <li>Elinizdeki değişiklikleri commit'leyip push edin. Sonra GitHub'da kendi fork'unuzda <b>Sync fork → Update branch</b> düğmesine basın.</li>
         <li>Yeni haftayı alın, klasöre girin ve bu haftanın paketlerini kurun:
           <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>git pull
-cd hafta04
+cd hafta05
 python -m pip install -r requirements.txt</pre></div></li>
         <li><code>alistirma.py</code>'yi okuyun; her fonksiyonun üstündeki açıklama şartnamedir. <code>test_alistirma.py</code>'de örnek bir test hazır.</li>
         <li>Testlerinizi yazın ve çalıştırın:
           <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest -v</pre></div></li>
-        <li>Bitince gönderin ve fork'unuzun <b>Actions</b> sekmesinde <code>hafta04</code> satırına bakın:
+        <li>Bitince gönderin ve fork'unuzun <b>Actions</b> sekmesinde <code>hafta05</code> satırına bakın:
           <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>git add .
-git commit -m "hafta04 testleri"
+git commit -m "hafta05 testleri"
 git push</pre></div></li>
       </ol>
       <p>Bu hafta iki kontrol var. Başta ikisi de kırmızı:</p>

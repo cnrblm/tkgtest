@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Statik Test 101</title>
+<meta name="description" content="Yazılım Kalite Güvencesi ve Testi dersi için statik test: PEP 8, ruff ile statik analiz ve biçimlendirme, karmaşıklık, mypy'ye kısa giriş, kod gözden geçirme.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+:root{
+  --bg:#F6F7F9;
+  --surface:#FFFFFF;
+  --ink:#1A2130;
+  --muted:#586274;
+  --line:#DDE1E8;
+  --accent:#B8430F;
+  --accent-soft:#FBEDE6;
+  --code-bg:#1C2331;
+  --code-ink:#E6E9EF;
+  --code-dim:#8B95A7;
+  --ok:#1E7A4C;
+  --ok-soft:#E4F3EA;
+  --warn-soft:#FFF4DB;
+  --warn-ink:#7A5200;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#12161E; --surface:#1A1F29; --ink:#E7EAF0; --muted:#9AA3B3; --line:#2C3340;
+    --accent:#F08A5D; --accent-soft:#2E2019; --code-bg:#0C1017; --code-ink:#E6E9EF; --code-dim:#7D8799;
+    --ok:#5CC48E; --ok-soft:#17291F; --warn-soft:#2C2412; --warn-ink:#E8C06A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#12161E; --surface:#1A1F29; --ink:#E7EAF0; --muted:#9AA3B3; --line:#2C3340;
+  --accent:#F08A5D; --accent-soft:#2E2019; --code-bg:#0C1017; --code-ink:#E6E9EF; --code-dim:#7D8799;
+  --ok:#5CC48E; --ok-soft:#17291F; --warn-soft:#2C2412; --warn-ink:#E8C06A;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16.5px;line-height:1.6;padding-inline:20px;padding-block:0 64px}
+a{color:var(--accent);text-underline-offset:2px}
+.home-btn{position:fixed;top:16px;left:16px;z-index:50;display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-family:var(--mono);font-size:13px;padding:8px 14px;border-radius:999px;box-shadow:0 2px 10px rgba(0,0,0,.1);transition:border-color .15s ease,color .15s ease}
+.home-btn:hover{border-color:var(--accent);color:var(--accent)}
+@media (max-width:480px){.home-btn{top:10px;left:10px;padding:7px 11px;font-size:12px}}
+a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:56px}
+header.top{max-width:1080px;margin:0 auto;padding-block:48px 28px;border-bottom:1px solid var(--line);margin-bottom:36px}
+.course{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+h1{font-size:clamp(30px,5vw,44px);line-height:1.12;margin:0 0 14px;letter-spacing:-.01em;text-wrap:balance}
+.lede{max-width:62ch;color:var(--muted);margin:0;font-size:17.5px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:18px;font-size:14px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:14.5px}
+nav.toc p{margin:0 0 10px;font-weight:600;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:t;display:grid;gap:2px}
+nav.toc li{counter-increment:t}
+nav.toc a{display:flex;gap:10px;padding:6px 8px;border-radius:6px;color:var(--ink);text-decoration:none}
+nav.toc a::before{content:counter(t);font-family:var(--mono);font-size:12.5px;color:var(--muted);min-width:1.4em;padding-top:1px}
+nav.toc a:hover{background:var(--surface)}
+nav.toc a.done::before{content:"✓";color:var(--ok)}
+
+main{min-width:0}
+section.step{padding-block:8px 36px;border-bottom:1px solid var(--line);margin-bottom:36px;scroll-margin-top:24px}
+section.step:last-of-type{border-bottom:0}
+.step-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}
+.num{font-family:var(--mono);font-size:14px;color:var(--accent);font-weight:500;flex:none}
+h2{font-size:25px;line-height:1.25;margin:0;text-wrap:balance}
+h3{font-size:17px;margin:26px 0 8px}
+p{margin:10px 0;max-width:68ch}
+.time{font-size:13.5px;color:var(--muted);margin:0 0 14px}
+ul.plain,ol.plain{padding-left:1.25em;margin:10px 0;max-width:68ch}
+ul.plain li,ol.plain li{margin:5px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--surface);border:1px solid var(--line);padding:1px 5px;border-radius:4px}
+kbd{font-family:var(--mono);font-size:.85em;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--surface)}
+
+.cmd{position:relative;margin:12px 0 16px;background:var(--code-bg);color:var(--code-ink);border-radius:8px;overflow:hidden}
+.cmd pre{margin:0;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:14px;line-height:1.65}
+.cmd .c{color:var(--code-dim)}
+.cmd .v{color:#F5B38F}
+.cmd-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 10px 8px 18px;border-bottom:1px solid rgba(255,255,255,.08);font-size:12.5px;color:var(--code-dim);font-family:var(--mono)}
+.copy{font:500 12.5px var(--sans);color:var(--code-ink);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:4px 10px;cursor:pointer}
+.copy:hover{background:rgba(255,255,255,.16)}
+.out{background:var(--surface);border:1px solid var(--line);border-radius:8px;margin:-6px 0 16px;padding:12px 16px;font-family:var(--mono);font-size:13.5px;color:var(--muted);overflow-x:auto;white-space:pre}
+.out::before{content:"Beklenen çıktı";display:block;font-family:var(--sans);font-size:12px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;color:var(--muted)}
+
+.note{border-radius:8px;padding:12px 16px;margin:14px 0;max-width:72ch;font-size:15.5px}
+.note.tip{background:var(--ok-soft)}
+.note.warn{background:var(--warn-soft);color:var(--warn-ink)}
+.note.warn a{color:inherit}
+.note b{font-weight:600}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:14px 0 0;flex-wrap:wrap}
+.tabs button{font:500 14.5px var(--sans);color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;padding:8px 14px;cursor:pointer;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.panel{padding-top:6px}
+
+.you{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:0 0 36px}
+.you h2{font-size:18px;margin:0 0 4px}
+.you p{margin:0 0 14px;color:var(--muted);font-size:15px}
+.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.fields label{display:grid;gap:4px;font-size:13.5px;color:var(--muted)}
+.fields input{font:15px var(--sans);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+
+.check{display:grid;gap:8px;margin:12px 0}
+.check label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;max-width:68ch}
+.check input{margin-top:5px;accent-color:var(--accent);width:16px;height:16px;flex:none}
+
+details.err{border:1px solid var(--line);border-radius:8px;background:var(--surface);margin:10px 0}
+details.err summary{cursor:pointer;padding:12px 16px;font-family:var(--mono);font-size:14px;list-style:none}
+details.err summary::-webkit-details-marker{display:none}
+details.err summary::before{content:"+";display:inline-block;width:1.2em;color:var(--accent)}
+details.err[open] summary::before{content:"–"}
+details.err .body{padding:0 16px 12px}
+
+table.levels{border-collapse:collapse;width:100%;font-size:15px;margin:10px 0}
+.tbl{overflow-x:auto}
+table.levels th,table.levels td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+table.levels th{font-size:12.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tag{display:inline-block;font-size:12.5px;padding:1px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-weight:500;white-space:nowrap}
+.tag.opt{background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+
+footer{max-width:1080px;margin:24px auto 0;color:var(--muted);font-size:14px}
+
+@media (max-width:860px){
+  .wrap{grid-template-columns:1fr;gap:0}
+  nav.toc{position:static;margin-bottom:28px;border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--surface)}
+  .fields{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+<style>nav.toc a.active{background:var(--surface);color:var(--accent);font-weight:500}</style>
+</head>
+<body>
+<a class="home-btn" href="index.html">← Ana sayfa</a>
+<header class="top">
+  <p class="course">Yazılım Kalite Güvencesi ve Testi · 6. hafta</p>
+  <h1>Statik test: kodu çalıştırmadan kalite</h1>
+  <p class="lede">Şimdiye kadar testlerimiz kodu <b>çalıştırarak</b> hata aradı. Bu hafta kodu hiç çalıştırmadan neler bulunabileceğine bakıyoruz: Python'un yazım kuralları (<b>PEP 8</b>), bu kuralları ve sık yapılan hataları denetleyen <b>ruff</b>, kısaca <b>mypy</b> ve kod gözden geçirme. Örnekleri sırayla kendi bilgisayarınızda çalıştırın.</p>
+  <div class="meta"><span>Süre: <b>2 saat, bölüm bölüm</b></span><span>Gerekenler: <b>pytest 102, VS Code</b></span></div>
+</header>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Bölümler">
+    <p>Bölümler</p>
+    <ol id="toc">
+      <li><a href="#statik">Kodu çalıştırmadan test</a></li>
+      <li><a href="#pep">PEP ve Python'un Zen'i</a></li>
+      <li><a href="#pep8">PEP 8</a></li>
+      <li><a href="#ruff">Ruff: ilk kontrol</a></li>
+      <li><a href="#kurallar">Kural aileleri, ruff.toml</a></li>
+      <li><a href="#gercek">Uyarı değil, hata</a></li>
+      <li><a href="#duzelt">Düzeltme ve biçimlendirme</a></li>
+      <li><a href="#karmasiklik">Karmaşıklık</a></li>
+      <li><a href="#mypy">Tip ipuçları ve mypy</a></li>
+      <li><a href="#araclar">Editör ve başka araçlar</a></li>
+      <li><a href="#review">Kod gözden geçirme</a></li>
+      <li><a href="#hatalar">Sık hatalar</a></li>
+      <li><a href="#alistirma">Alıştırmalar</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <section class="step" id="statik">
+      <div class="step-head"><span class="num">01</span><h2>Kodu çalıştırmadan test</h2></div>
+      <p class="time">10 dakika</p>
+      <p>pytest ile yazdığımız testler kodu çalıştırır ve çıkan sonuca bakar. Buna <b>dinamik test</b> denir. Bazı sorunları bulmak için kodu çalıştırmak gerekmez; okumak yeterlidir. Kodu (ya da gereksinim belgesini) çalıştırmadan incelemeye <b>statik test</b> denir. İki yolu vardır: insanın okuması (<b>gözden geçirme</b>) ve bir aracın okuması (<b>statik analiz</b>).</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th></th><th>Dinamik test</th><th>Statik test</th></tr></thead>
+        <tbody>
+          <tr><td>Kod çalışıyor mu?</td><td>Evet</td><td>Hayır</td></tr>
+          <tr><td>Örnekler</td><td>pytest, mutasyon testi, hypothesis</td><td>Gözden geçirme, ruff, mypy</td></tr>
+          <tr><td>Ne zaman?</td><td>Kod çalışır hâle gelince</td><td>Kod yazılırken; gereksinimler için kod yazılmadan önce bile</td></tr>
+          <tr><td>Ne bulur?</td><td>Arızayı (yanlış çıktı), oradan geriye kusuru ararız</td><td>Kusuru doğrudan: kullanılmayan değişken, yanlış karşılaştırma, aşırı karmaşık kod</td></tr>
+        </tbody>
+      </table></div>
+      <p>İkisi birbirinin yerine geçmez. Statik analiz, programın <b>ne yapması gerektiğini</b> bilmez: 18 yerine 17 yazılmış bir sınırı bulamaz. Testler ise hiç çalışmayan bir satırdaki ya da “şimdilik çalışan” bir kötü alışkanlıktaki sorunu göremez. Bu sayfada ikincisini öğreniyoruz.</p>
+      <div class="note tip"><b>Neden önemli?</b> Bir hata ne kadar erken bulunursa o kadar ucuza düzeltilir. Statik analiz, kodu kaydettiğiniz anda, daha test bile yazmadan çalışır.</div>
+    </section>
+
+    <section class="step" id="pep">
+      <div class="step-head"><span class="num">02</span><h2>PEP ve Python'un Zen'i</h2></div>
+      <p class="time">10 dakika</p>
+      <p><b>PEP</b> (Python Enhancement Proposal), Python'a yapılacak bir değişikliği ya da bir kuralı anlatan numaralı bir belgedir. Yüzlercesi var; bu derste bizi ilgilendirenler şunlar:</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>PEP</th><th>Konusu</th><th>Bu sayfada</th></tr></thead>
+        <tbody>
+          <tr><td>PEP 20</td><td>Python'un Zen'i: dilin tasarım ilkeleri</td><td>Bu bölüm</td></tr>
+          <tr><td>PEP 8</td><td>Kod yazım kuralları: adlar, boşluklar, satır uzunluğu</td><td><a href="#pep8">3. bölüm</a></td></tr>
+          <tr><td>PEP 257</td><td>Docstring (belge metni) nasıl yazılır</td><td><a href="#pep8">3. bölüm</a></td></tr>
+          <tr><td>PEP 484</td><td>Tip ipuçları</td><td><a href="#mypy">9. bölüm</a></td></tr>
+        </tbody>
+      </table></div>
+      <p>PEP 20 Python'un içinde gelir:</p>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -c "import this"</pre></div>
+      <div class="out">The Zen of Python, by Tim Peters
+
+Beautiful is better than ugly.
+Explicit is better than implicit.
+Simple is better than complex.
+Complex is better than complicated.
+Flat is better than nested.
+Sparse is better than dense.
+Readability counts.
+...
+Errors should never pass silently.
+Unless explicitly silenced.
+...</div>
+      <p>Bu hafta en çok işimize yarayacak satırlar:</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Satır</th><th>Anlamı</th><th>Bu sayfada nerede?</th></tr></thead>
+        <tbody>
+          <tr><td><i>Readability counts.</i></td><td>Kod bir kez yazılır, defalarca okunur.</td><td>PEP 8</td></tr>
+          <tr><td><i>Flat is better than nested.</i></td><td>İç içe <code>if</code>'ler yerine düz bir akış.</td><td>Karmaşıklık</td></tr>
+          <tr><td><i>Simple is better than complex.</i></td><td><code>if x: return True else: return False</code> yerine <code>return x</code>.</td><td>SIM103</td></tr>
+          <tr><td><i>Errors should never pass silently.</i></td><td>Hatalar sessizce yutulmamalı.</td><td>Çıplak <code>except</code></td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="step" id="pep8">
+      <div class="step-head"><span class="num">03</span><h2>PEP 8: kod yazım kuralları</h2></div>
+      <p class="time">20 dakika</p>
+      <p>PEP 8, Python kodunun nasıl <b>görünmesi</b> gerektiğini anlatır. Bu kurallara uymayan kod da çalışır; ama herkes aynı biçimde yazınca başkasının kodunu okumak, kendi kodunuzu okumak kadar kolaylaşır. En sık karşılaşacağınız kurallar:</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Konu</th><th>Kural</th><th>Doğru</th><th>Yanlış</th></tr></thead>
+        <tbody>
+          <tr><td>Girinti</td><td>4 boşluk</td><td><code>␣␣␣␣return x</code></td><td>2 boşluk ya da sekme</td></tr>
+          <tr><td>Fonksiyon ve değişken adları</td><td>Küçük harf, kelimeler alt çizgiyle (snake_case)</td><td><code>not_ortalamasi</code></td><td><code>NotOrtalamasi</code>, <code>notortalamasi</code></td></tr>
+          <tr><td>Sabitler</td><td>Büyük harf</td><td><code>GECME_NOTU = 50</code></td><td><code>gecmeNotu = 50</code></td></tr>
+          <tr><td>Operatörler</td><td>İki yanda birer boşluk</td><td><code>x = a + b</code></td><td><code>x=a+b</code></td></tr>
+          <tr><td>Parantezler</td><td>İçinde boşluk yok</td><td><code>print(x)</code></td><td><code>print( x )</code></td></tr>
+          <tr><td>Fonksiyonlar arası</td><td>İki boş satır</td><td></td><td>Hiç boşluk bırakmamak</td></tr>
+          <tr><td>Satır uzunluğu</td><td>PEP 8: en fazla 79 karakter; ruff varsayılan olarak 88 kullanır</td><td></td><td>Ekrandan taşan satırlar</td></tr>
+          <tr><td>import</td><td>Dosyanın en üstünde, her biri ayrı satırda</td><td><code>import os</code><br><code>import sys</code></td><td><code>import os, sys</code></td></tr>
+          <tr><td>None ile karşılaştırma</td><td><code>is</code> ile</td><td><code>if x is None:</code></td><td><code>if x == None:</code></td></tr>
+          <tr><td>True/False ile karşılaştırma</td><td>Hiç karşılaştırmayın</td><td><code>if gecti:</code></td><td><code>if gecti == True:</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Python adlarda Türkçe harfe izin verir (<code>öğrenci = 1</code> çalışır) ama derste kullanmıyoruz: her klavyede kolay yazılmaz.</p>
+      <p>Aşağıdaki iki fonksiyon aynı işi yapıyor. Hangisini okumak daha kolay?</p>
+      <div class="cmd"><div class="cmd-bar">PEP 8'e uymayan<button class="copy" type="button">Kopyala</button></div><pre>def Gecti(Puan, BarajNotu=50):
+    if Puan == None:
+        return False
+    if Puan >= BarajNotu:
+        return True
+    else:
+        return False</pre></div>
+      <div class="cmd"><div class="cmd-bar">PEP 8'e uyan<button class="copy" type="button">Kopyala</button></div><pre>"""Sınav sonuçlarıyla ilgili yardımcı fonksiyonlar."""
+
+
+def gecti(puan, baraj_notu=50):
+    """Puan baraj notuna eşit veya büyükse True döndürür."""
+    if puan is None:
+        return False
+    return puan >= baraj_notu</pre></div>
+      <h3>Docstring (PEP 257)</h3>
+      <p>İkinci sürümdeki üç tırnaklı metinler <b>docstring</b>'dir: dosyanın ya da fonksiyonun ilk satırı olarak yazılan açıklama. Yorumdan (<code>#</code>) farkı, Python'un onu saklamasıdır. VS Code fonksiyonun üstüne gelince onu gösterir; Python kabuğunda <code>help(gecti)</code> yazarsanız şunu görürsünüz:</p>
+      <div class="out">Help on function gecti in module gecti:
+
+gecti(puan, baraj_notu=50)
+    Puan baraj notuna eşit veya büyükse True döndürür.</div>
+      <p>PEP 257'nin özü: tek satırlık docstring üç tırnakla açılır ve kapanır, fonksiyonun <b>ne yaptığını</b> bir cümleyle söyler. Nasıl yaptığını anlatmaz.</p>
+    </section>
+
+    <section class="step" id="ruff">
+      <div class="step-head"><span class="num">04</span><h2>Ruff: ilk kontrol</h2></div>
+      <p class="time">15 dakika</p>
+      <p>Bu kuralları gözle denetlemek yorucu. <b>Linter</b> denen araçlar kodu okuyup kurallara uymayan yerleri listeler. Biz <b>ruff</b> kullanacağız: hızlı, tek araç, hem denetliyor hem biçimlendiriyor. Yeni bir klasör açın:</p>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>mkdir statik-deneme
+cd statik-deneme
+python -m pip install ruff</pre></div>
+      <div class="cmd"><div class="cmd-bar">ortalama.py<button class="copy" type="button">Kopyala</button></div><pre>import os
+
+
+def ortalama(notlar):
+    toplam = 0
+    for n in notlar:
+        toplam = toplam + n
+    ort = toplam / len(notlar)
+    return toplam</pre></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m ruff check ortalama.py</pre></div>
+      <div class="out">F401 [*] `os` imported but unused
+ --> ortalama.py:1:8
+  |
+1 | import os
+  |        ^^
+help: Remove unused import: `os`
+...
+
+F841 Local variable `ort` is assigned to but never used
+ --> ortalama.py:8:5
+  |
+6 |     for n in notlar:
+7 |         toplam = toplam + n
+8 |     ort = toplam / len(notlar)
+  |     ^^^
+9 |     return toplam
+  |
+...
+Found 2 errors.
+[*] 1 fixable with `--fix` (1 unsafe fix available with `--fix --unsafe-fixes`).</div>
+      <p>Her uyarı aynı biçimde okunur:</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Parça</th><th>Anlamı</th></tr></thead>
+        <tbody>
+          <tr><td><code>F841</code></td><td>Kuralın kodu. Harf kural ailesini, sayı kuralı gösterir.</td></tr>
+          <tr><td><code>Local variable `ort` is assigned to but never used</code></td><td>Ne bulduğu: <code>ort</code>'a değer verilmiş ama hiç kullanılmamış.</td></tr>
+          <tr><td><code>ortalama.py:8:5</code></td><td>Dosya, satır, sütun.</td></tr>
+          <tr><td><code>[*]</code></td><td>Ruff bunu kendisi düzeltebilir (<a href="#duzelt">7. bölüm</a>).</td></tr>
+        </tbody>
+      </table></div>
+      <p>İkinci uyarıya dikkat edin. <code>ort</code>'un kullanılmaması bir “süs” sorunu değil: fonksiyon ortalama yerine <b>toplamı</b> döndürüyor. Kullanılmayan bir değişken çoğu zaman bir hatanın izidir. Ruff bunu, siz daha test yazmadan buldu.</p>
+      <p>Bir kodun ne anlama geldiğini, neden kötü olduğunu ve nasıl düzeltileceğini ruff'a sorabilirsiniz:</p>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m ruff rule F841</pre></div>
+      <div class="out"># unused-variable (F841)
+...
+## Why is this bad?
+A variable that is defined but not used is likely a mistake, and should
+be removed to avoid confusion.
+...</div>
+      <div class="note tip"><b>Neden <code>python -m ruff</code>?</b> pytest'te olduğu gibi: Windows'ta <code>ruff</code> komutu bazen bulunamaz, <code>python -m ruff</code> her zaman çalışır.</div>
+    </section>
+
+    <section class="step" id="kurallar">
+      <div class="step-head"><span class="num">05</span><h2>Kural aileleri ve ruff.toml</h2></div>
+      <p class="time">15 dakika</p>
+      <p>Ruff yüzlerce kural bilir. Yukarıdaki <code>Gecti</code> fonksiyonunu <code>gecti.py</code> olarak kaydedip (PEP 8'e uymayan sürümü) denetleyin:</p>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m ruff check gecti.py</pre></div>
+      <div class="out">gecti.py:4:5: SIM103 Return the condition `Puan >= BarajNotu` directly
+...</div>
+      <p>Yalnızca bir uyarı. Adlar ve <code>== None</code> neden bulunmadı? Çünkü ruff'ın varsayılan kuralları PEP 8 adlandırma kurallarını içermez. Hangi kural ailelerinin açık olacağını klasöre bir <code>ruff.toml</code> dosyası koyarak seçersiniz:</p>
+      <div class="cmd"><div class="cmd-bar">ruff.toml<button class="copy" type="button">Kopyala</button></div><pre>output-format = "concise"
+
+[lint]
+select = ["E", "W", "F", "B", "N", "SIM", "C90", "I"]
+
+[lint.mccabe]
+max-complexity = 5</pre></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m ruff check gecti.py</pre></div>
+      <div class="out">gecti.py:1:5: N802 Function name `Gecti` should be lowercase
+gecti.py:1:11: N803 Argument name `Puan` should be lowercase
+gecti.py:1:17: N803 Argument name `BarajNotu` should be lowercase
+gecti.py:2:16: E711 Comparison to `None` should be `cond is None`
+gecti.py:4:5: SIM103 Return the condition `Puan >= BarajNotu` directly
+Found 5 errors.
+2 unsafe fixes available with `--fix --unsafe-fixes`.</div>
+      <p><code>output-format = "concise"</code> her uyarıyı tek satırda gösterir. <code>select</code> listesindeki her harf bir kural ailesidir; ruff bu kuralları eskiden ayrı ayrı kurulan araçlardan alır:</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Harf</th><th>Kaynağı</th><th>Neye bakar?</th><th>Örnek</th></tr></thead>
+        <tbody>
+          <tr><td><code>E</code>, <code>W</code></td><td>pycodestyle</td><td>PEP 8 yazım kuralları</td><td>E711 <code>== None</code>, E501 satır çok uzun</td></tr>
+          <tr><td><code>F</code></td><td>Pyflakes</td><td>Kesin hatalar ve gereksiz kod</td><td>F401 kullanılmayan import, F821 tanımsız ad</td></tr>
+          <tr><td><code>B</code></td><td>flake8-bugbear</td><td>Hataya yol açan alışkanlıklar</td><td>B006 değiştirilebilir varsayılan değer</td></tr>
+          <tr><td><code>N</code></td><td>pep8-naming</td><td>PEP 8 adlandırma</td><td>N802 fonksiyon adı küçük harf olmalı</td></tr>
+          <tr><td><code>SIM</code></td><td>flake8-simplify</td><td>Daha basit yazılabilecek kod</td><td>SIM103 koşulu doğrudan döndür</td></tr>
+          <tr><td><code>C90</code></td><td>mccabe</td><td>Fonksiyonun karmaşıklığı</td><td>C901 fonksiyon çok karmaşık</td></tr>
+          <tr><td><code>I</code></td><td>isort</td><td>import'ların sırası</td><td>I001 import'lar sıralı değil</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note tip"><b>ruff.toml nerede aranır?</b> Ruff, denetlediği dosyanın klasöründe, yoksa üst klasörlerde arar. Alıştırma klasörünüzde <code>ruff.toml</code> hazır geliyor.</div>
+    </section>
+
+    <section class="step" id="gercek">
+      <div class="step-head"><span class="num">06</span><h2>Uyarı değil, hata</h2></div>
+      <p class="time">20 dakika</p>
+      <p>Ruff'ın bazı uyarıları zevk meselesi gibi görünür. Bazıları ise çalışıyor gibi görünen koddaki gerçek hatalardır. İki örnek:</p>
+      <h3>B006: değiştirilebilir varsayılan değer</h3>
+      <div class="cmd"><div class="cmd-bar">sepet.py<button class="copy" type="button">Kopyala</button></div><pre>def sepete_ekle(urun, sepet=[]):
+    sepet.append(urun)
+    return sepet
+
+
+print(sepete_ekle("çay"))
+print(sepete_ekle("simit"))</pre></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python sepet.py</pre></div>
+      <div class="out">['çay']
+['çay', 'simit']</div>
+      <p>İkinci çağrıda sepet boş olmalıydı ama ilk çağrının çayı hâlâ orada. Varsayılan değer (<code>[]</code>) fonksiyon <b>tanımlanırken bir kez</b> oluşturulur ve sonraki bütün çağrılar aynı listeyi paylaşır. Ruff bunu çalıştırmadan görür:</p>
+      <div class="out">sepet.py:1:29: B006 Do not use mutable data structures for argument defaults</div>
+      <p>Düzeltmenin bilinen kalıbı: varsayılan olarak <code>None</code> verin, listeyi fonksiyonun içinde oluşturun.</p>
+      <div class="cmd"><div class="cmd-bar">sepet.py<button class="copy" type="button">Kopyala</button></div><pre>def sepete_ekle(urun, sepet=None):
+    if sepet is None:
+        sepet = []
+    sepet.append(urun)
+    return sepet</pre></div>
+      <div class="out">['çay']
+['simit']</div>
+      <h3>E722: çıplak except</h3>
+      <div class="cmd"><div class="cmd-bar">bolme.py<button class="copy" type="button">Kopyala</button></div><pre>def guvenli_bol(a, b):
+    try:
+        return a / bb
+    except:
+        return None
+
+
+print(guvenli_bol(10, 2))</pre></div>
+      <div class="out">None</div>
+      <p>10 / 2 sonucu <code>None</code> çıktı. Kodda bir yazım hatası var (<code>bb</code>), Python bunun için <code>NameError</code> fırlatıyor, ama türü yazılmamış <code>except:</code> <b>her</b> hatayı yakalayıp sessizce yutuyor. Zen'in “hatalar sessizce geçmemeli” satırı tam olarak bu. Ruff ikisini de buluyor:</p>
+      <div class="out">bolme.py:3:20: F821 Undefined name `bb`
+bolme.py:4:5: E722 Do not use bare `except`
+Found 2 errors.</div>
+      <p>Düzeltme: yazım hatasını giderin ve yalnızca <b>beklediğiniz</b> hatayı yakalayın:</p>
+      <div class="cmd"><div class="cmd-bar">bolme.py<button class="copy" type="button">Kopyala</button></div><pre>def guvenli_bol(a, b):
+    try:
+        return a / b
+    except ZeroDivisionError:
+        return None
+
+
+print(guvenli_bol(10, 2))
+print(guvenli_bol(10, 0))</pre></div>
+      <div class="out">5.0
+None</div>
+    </section>
+
+    <section class="step" id="duzelt">
+      <div class="step-head"><span class="num">07</span><h2>Otomatik düzeltme ve biçimlendirme</h2></div>
+      <p class="time">15 dakika</p>
+      <h3>ruff check --fix</h3>
+      <p><code>[*]</code> işaretli uyarıları ruff kendisi düzeltebilir. <code>ortalama.py</code>'ye dönün:</p>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m ruff check --fix ortalama.py</pre></div>
+      <div class="out">ortalama.py:7:5: F841 Local variable `ort` is assigned to but never used
+Found 2 errors (1 fixed, 1 remaining).
+1 unsafe fix available with `--fix --unsafe-fixes`.</div>
+      <p><code>import os</code> silindi. F841 ise kaldı, çünkü düzeltmesi <b>güvensiz</b> (unsafe): ruff'ın önerisi <code>ort =</code> kısmını silmek, yani sonucu hiçbir yere yazmadan bölme yapmak. Asıl düzeltme <code>return ort</code> yazmak; bunu ancak kodu okuyan biri bilebilir. <code>--unsafe-fixes</code> kullanmayın, kalan uyarıları kendiniz düzeltin.</p>
+      <h3>ruff format</h3>
+      <p>Boşluklar, tırnaklar, boş satırlar gibi biçim konularıyla <b>biçimlendirici</b> (formatter) ilgilenir. Aşağıdaki dosyada <code>ruff check</code> hiçbir şey bulmaz ama dosya dağınık:</p>
+      <div class="cmd"><div class="cmd-bar">kare.py<button class="copy" type="button">Kopyala</button></div><pre>def kare( x ):
+  return x*x
+sayilar=[1,2,3]
+for s in sayilar :
+    print( kare(s) )</pre></div>
+      <p>Önce neyi değiştireceğine bakın (<code>--diff</code> dosyaya dokunmaz):</p>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m ruff format --diff kare.py</pre></div>
+      <div class="out">--- kare.py
++++ kare.py
+@@ -1,5 +1,7 @@
+-def kare( x ):
+-  return x*x
+-sayilar=[1,2,3]
+-for s in sayilar :
+-    print( kare(s) )
++def kare(x):
++    return x * x
++
++
++sayilar = [1, 2, 3]
++for s in sayilar:
++    print(kare(s))
+
+1 file would be reformatted</div>
+      <p><code>-</code> ile başlayan satırlar silinecek, <code>+</code> ile başlayanlar eklenecek. Uygulamak için <code>--diff</code> olmadan çalıştırın:</p>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m ruff format kare.py</pre></div>
+      <div class="out">1 file reformatted</div>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Komut</th><th>Ne yapar?</th><th>Kodun anlamını değiştirir mi?</th></tr></thead>
+        <tbody>
+          <tr><td><code>ruff format</code></td><td>Yalnızca görünüş: boşluk, girinti, tırnak, boş satır</td><td>Hayır, hiçbir zaman</td></tr>
+          <tr><td><code>ruff check</code></td><td>Kuralları denetler, uyarı listeler</td><td>Dosyaya dokunmaz</td></tr>
+          <tr><td><code>ruff check --fix</code></td><td>Güvenli düzeltmeleri uygular</td><td>Hayır; güvensiz olanlar uygulanmaz</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note tip"><b>black?</b> Python'da en çok bilinen biçimlendirici black'tir. <code>ruff format</code> neredeyse aynı çıktıyı verir; ikisini birden kurmanıza gerek yok.</div>
+    </section>
+
+    <section class="step" id="karmasiklik">
+      <div class="step-head"><span class="num">08</span><h2>Karmaşıklık</h2></div>
+      <p class="time">20 dakika</p>
+      <p>Bir fonksiyondaki her <code>if</code>, <code>elif</code>, <code>for</code>, <code>while</code> ve <code>except</code> akışı ikiye ayırır. <b>Döngüsel karmaşıklık</b> (cyclomatic complexity) bu ayrımların sayısının bir fazlasıdır: fonksiyonun içinden geçen, birbirinden bağımsız yolların sayısı. pytest 102'deki <b>dal kapsamı</b> ile aynı fikir: karmaşıklık arttıkça, her yolu denemek için gereken test sayısı da artar.</p>
+      <div class="cmd"><div class="cmd-bar">otopark.py<button class="copy" type="button">Kopyala</button></div><pre>def otopark_ucreti(saat, abone):
+    if saat &lt;= 0:
+        return 0
+    if abone:
+        if saat &lt;= 2:
+            return 0
+        else:
+            if saat &lt;= 6:
+                return 30
+            else:
+                return 70
+    else:
+        if saat &lt;= 2:
+            return 30
+        else:
+            if saat &lt;= 6:
+                return 60
+            else:
+                return 100</pre></div>
+      <p>Altı <code>if</code>, karmaşıklık 1 + 6 = 7. <code>ruff.toml</code>'da sınırı 5 koymuştuk:</p>
+      <div class="out">otopark.py:1:5: C901 `otopark_ucreti` is too complex (7 > 5)</div>
+      <p>Koda dikkatli bakınca bir düzen görülüyor: abone olan herkes, abone olmayanın ödediğinden 30 TL eksik ödüyor. Önce mevcut davranışı bir testle sabitleyin, sonra kodu değiştirin:</p>
+      <div class="cmd"><div class="cmd-bar">test_otopark.py<button class="copy" type="button">Kopyala</button></div><pre>import pytest
+
+from otopark import otopark_ucreti
+
+
+@pytest.mark.parametrize(
+    "saat, abone, beklenen",
+    [
+        (0, False, 0),
+        (2, False, 30),
+        (6, False, 60),
+        (7, False, 100),
+        (0, True, 0),
+        (2, True, 0),
+        (6, True, 30),
+        (7, True, 70),
+    ],
+)
+def test_otopark_ucreti(saat, abone, beklenen):
+    assert otopark_ucreti(saat, abone) == beklenen</pre></div>
+      <div class="out">8 passed</div>
+      <div class="cmd"><div class="cmd-bar">otopark.py (yeni)<button class="copy" type="button">Kopyala</button></div><pre>def otopark_ucreti(saat, abone):
+    if saat &lt;= 0:
+        return 0
+    if saat &lt;= 2:
+        ucret = 30
+    elif saat &lt;= 6:
+        ucret = 60
+    else:
+        ucret = 100
+    if abone:
+        ucret = ucret - 30
+    return ucret</pre></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest test_otopark.py -q
+python -m ruff check otopark.py</pre></div>
+      <div class="out">8 passed
+All checks passed!</div>
+      <p>Davranış aynı (testler hâlâ yeşil), karmaşıklık 5'e indi, iç içe yapı düzleşti. Kodun davranışını değiştirmeden yapısını iyileştirmeye <b>yeniden düzenleme</b> (refactoring) denir. Testler olmadan yapılan yeniden düzenleme kumarla aynı şeydir: bir şeyi bozup bozmadığınızı bilemezsiniz.</p>
+      <div class="note tip"><b>Sınır kaç olmalı?</b> Tek bir doğru sayı yok. Ruff'ta varsayılan sınır 10; biz başlangıç örnekleri kısa olduğu için 5 kullanıyoruz. Önemli olan sayı değil, ekipçe bir sınır seçip ona uymak.</div>
+    </section>
+
+    <section class="step" id="mypy">
+      <div class="step-head"><span class="num">09</span><h2>Kısa giriş: tip ipuçları ve mypy</h2></div>
+      <p class="time">15 dakika</p>
+      <p>Python bir değişkenin türünü sormaz; yanlış türü ancak o satır çalışınca fark eder. <b>Tip ipuçları</b> (PEP 484) ile bir fonksiyonun ne aldığını ve ne döndürdüğünü yazabilirsiniz. Python bunları çalışırken yok sayar; <b>mypy</b> ise kodu çalıştırmadan denetler.</p>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pip install mypy</pre></div>
+      <div class="cmd"><div class="cmd-bar">fiyat.py<button class="copy" type="button">Kopyala</button></div><pre>def kdv_ekle(fiyat: float) -> float:
+    return fiyat * 1.2
+
+
+def etiket(fiyat: float) -> str:
+    return "Fiyat: " + kdv_ekle(fiyat)</pre></div>
+      <p><code>fiyat: float</code> “bu parametre ondalıklı sayı”, <code>-&gt; str</code> “bu fonksiyon metin döndürür” demek. <code>python fiyat.py</code> hiçbir hata vermez, çünkü <code>etiket</code> hiç çağrılmıyor. Ruff da bir şey bulmaz. mypy ise bulur:</p>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m mypy fiyat.py</pre></div>
+      <div class="out">fiyat.py:6: error: Unsupported operand types for + ("str" and "float")  [operator]
+Found 1 error in 1 file (checked 1 source file)</div>
+      <p>Metin ile sayı toplanamaz. Düzeltmesi <code>"Fiyat: " + str(kdv_ekle(fiyat))</code>. Bundan sonra mypy <code>Success: no issues found</code> der.</p>
+      <p>mypy'nin en çok işe yaradığı yer, bazen <code>None</code> döndüren fonksiyonlardır:</p>
+      <div class="cmd"><div class="cmd-bar">ort.py<button class="copy" type="button">Kopyala</button></div><pre>def not_ortalamasi(notlar: list[int]) -> float | None:
+    if len(notlar) == 0:
+        return None
+    return sum(notlar) / len(notlar)
+
+
+def harf_ver(notlar: list[int]) -> str:
+    if not_ortalamasi(notlar) >= 50:
+        return "geçti"
+    return "kaldı"</pre></div>
+      <div class="out">ort.py:8: error: Unsupported operand types for &lt;= ("int" and "None")  [operator]
+ort.py:8: note: Left operand is of type "float | None"</div>
+      <p><code>float | None</code> “ondalıklı sayı ya da None” demek. mypy, boş listede <code>None &gt;= 50</code> karşılaştırmasının yapılacağını ve programın çökeceğini, hiçbir test yazılmadan söylüyor.</p>
+      <div class="note warn"><b>Dikkat:</b> mypy varsayılan olarak tip ipucu yazılmamış fonksiyonların içine bakmaz. İpucu yoksa “Success” demesi, kodun doğru olduğu anlamına gelmez. Bu haftanın alıştırmasında mypy yok; isteyen deneyebilir.</div>
+    </section>
+
+    <section class="step" id="araclar">
+      <div class="step-head"><span class="num">10</span><h2>Editörde ve başka araçlar</h2></div>
+      <p class="time">10 dakika</p>
+      <h3>VS Code eklentileri</h3>
+      <p>Statik analizin asıl gücü, siz yazarken çalışmasıdır. Eklentiler uyarıları kodun altına dalgalı çizgiyle çizer.</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Eklenti</th><th>Ne yapar?</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><b>Ruff</b> (Astral)</td><td>Ruff uyarılarını yazarken gösterir, kaydederken biçimlendirir</td><td><span class="tag">önerilen</span></td></tr>
+          <tr><td><b>Python</b> ve <b>Pylance</b> (Microsoft)</td><td>Otomatik tamamlama, tanımsız adlar, yanlış importlar</td><td><span class="tag">önerilen</span></td></tr>
+          <tr><td><b>Error Lens</b></td><td>Uyarı metnini satırın sonuna yazar; çizginin üstüne gelmeniz gerekmez</td><td><span class="tag opt">isteğe bağlı</span></td></tr>
+          <tr><td><b>SonarQube for IDE</b> (eski adı SonarLint)</td><td>Hata ve “kod kokusu” denetimi, bilişsel karmaşıklık; her uyarının neden kötü olduğunu ayrıntılı anlatır</td><td><span class="tag opt">isteğe bağlı</span></td></tr>
+          <tr><td><b>Mypy Type Checker</b> (Microsoft)</td><td>mypy uyarılarını editörde gösterir</td><td><span class="tag opt">isteğe bağlı</span></td></tr>
+        </tbody>
+      </table></div>
+      <p>Kaydederken ruff ile biçimlendirmek için VS Code'da <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <b>Preferences: Open User Settings (JSON)</b> açıp şunu ekleyin:</p>
+      <div class="cmd"><div class="cmd-bar">settings.json<button class="copy" type="button">Kopyala</button></div><pre>"[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true
+}</pre></div>
+      <h3>Başka araçlar</h3>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Araç</th><th>Ne işe yarar?</th></tr></thead>
+        <tbody>
+          <tr><td><b>pylint</b></td><td>Ruff'tan yavaş ama daha ayrıntılı; koda 10 üzerinden puan verir. PEP 8'e uymayan <code>Gecti</code> fonksiyonu <code>0.00/10</code>, düzeltilmiş hâli <code>10.00/10</code> alıyor.</td></tr>
+          <tr><td><b>radon</b></td><td>Karmaşıklığı ve “bakım yapılabilirlik” puanını raporlar. Araçlar karmaşıklığı biraz farklı sayabilir.</td></tr>
+          <tr><td><b>SonarQube Cloud</b></td><td>GitHub reposunu her push'ta tarar, kapsam raporuyla birlikte bir “kalite kapısı” uygular. Açık (public) repolar için ücretsiz. Derste göstereceğiz.</td></tr>
+          <tr><td><b>pre-commit</b></td><td>Her <code>git commit</code>'ten önce ruff'ı çalıştırır; kirli kod commit'lenemez.</td></tr>
+          <tr><td><b>bandit</b></td><td>Güvenlik açıklarını arayan statik analiz. 11. haftada.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note warn"><b>Puan hedef değildir.</b> pylint'ten 10/10 almak kodun doğru çalıştığını göstermez; yalnızca kuralları ihlal etmediğini gösterir. pytest 102'de kapsam için söylediğimizin aynısı.</div>
+    </section>
+
+    <section class="step" id="review">
+      <div class="step-head"><span class="num">11</span><h2>Kod gözden geçirme</h2></div>
+      <p class="time">15 dakika</p>
+      <p>Statik testin öbür yarısı, kodu <b>bir insanın</b> okumasıdır. GitHub'daki <i>pull request</i>'lerde ekip arkadaşının değişikliği okuyup yorum yazması en yaygın biçimidir. Araçlar ezberlenebilecek kuralları denetler; insan ise şunu sorar: <b>bu kod doğru şeyi mi yapıyor?</b></p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Sorun</th><th>Kim bulur?</th></tr></thead>
+        <tbody>
+          <tr><td>Dağınık biçim, girinti, boşluk</td><td><code>ruff format</code></td></tr>
+          <tr><td>PEP 8'e uymayan adlar, <code>== None</code></td><td><code>ruff check</code> (N, E)</td></tr>
+          <tr><td>Kullanılmayan import/değişken, tanımsız ad</td><td><code>ruff check</code> (F)</td></tr>
+          <tr><td>Değiştirilebilir varsayılan, çıplak <code>except</code></td><td><code>ruff check</code> (B, E722)</td></tr>
+          <tr><td>Metin ile sayıyı toplamak, olası <code>None</code></td><td>mypy</td></tr>
+          <tr><td>Aşırı karmaşık fonksiyon</td><td><code>ruff check</code> (C901), radon, SonarQube</td></tr>
+          <tr><td><code>&lt;</code> yerine <code>&lt;=</code>, yanlış yüzde hesabı</td><td><b>Yalnızca testler ve gözden geçirme</b></td></tr>
+          <tr><td>Şartnamede yazan bir durumun hiç ele alınmamış olması</td><td><b>Yalnızca gözden geçirme</b> (ve iyi yazılmış testler)</td></tr>
+        </tbody>
+      </table></div>
+      <p>Başkasının kodunu (ya da kendi kodunuzu) okurken kısa bir kontrol listesi işe yarar:</p>
+      <ol class="plain">
+        <li>Şartnameyi okudum. Kod her maddeyi karşılıyor mu?</li>
+        <li>Sınırlarda ne oluyor? (<code>&lt;</code> mı <code>&lt;=</code> mı, boş liste, 0, negatif sayı)</li>
+        <li>Hata durumları ele alınmış mı? Yanlış girdide ne oluyor?</li>
+        <li>Adlar ne yaptığını anlatıyor mu? <code>x</code>, <code>liste2</code>, <code>sonuc</code> yerine ne yazılabilirdi?</li>
+        <li>Bu değişikliği deneyen bir test var mı?</li>
+        <li>Ruff temiz mi? (Araçların bulacağı şeyler için insan vakti harcanmasın.)</li>
+      </ol>
+      <div class="note tip"><b>Gözden geçirme kişiyi değil, kodu eleştirir.</b> “Burada yanlış yapmışsın” yerine “Boş listede burası sıfıra bölmüyor mu?” diye sorun.</div>
+    </section>
+
+    <section class="step" id="hatalar">
+      <div class="step-head"><span class="num">12</span><h2>Sık karşılaşılan hatalar</h2></div>
+      <p class="time">Başvuru bölümü</p>
+      <details class="err"><summary>'ruff' is not recognized / ruff: command not found</summary><div class="body"><p>Komutu <code>python -m ruff check ...</code> biçiminde yazın.</p></div></details>
+      <details class="err"><summary>No module named ruff</summary><div class="body"><p>Ruff kurulu değil: <code>python -m pip install ruff</code>. Alıştırma klasöründe: <code>python -m pip install -r requirements.txt</code>.</p></div></details>
+      <details class="err"><summary>N802 gibi uyarılar bende çıkmıyor</summary><div class="body"><p>Ruff, <code>ruff.toml</code>'u bulamıyor. Denetlediğiniz dosyayla aynı klasörde (ya da bir üst klasörde) <code>ruff.toml</code> var mı? Dosyanın adı tam olarak <code>ruff.toml</code> mu (<code>ruff.toml.txt</code> değil)?</p></div></details>
+      <details class="err"><summary>F821 Undefined name `NotListesi`</summary><div class="body"><p>Bir parametrenin adını değiştirdiniz ama fonksiyonun içindeki kullanımlarını değiştirmediniz. VS Code'da adın üstüne gelip <kbd>F2</kbd> (Rename Symbol) ile değiştirirseniz bütün kullanımlar birlikte değişir.</p></div></details>
+      <details class="err"><summary>--fix bazı uyarıları düzeltmedi</summary><div class="body"><p>Normal. Yalnızca <code>[*]</code> işaretli, güvenli düzeltmeler otomatik yapılır. Kalanlar düşünmeyi gerektirir; <code>python -m ruff rule KOD</code> ile kuralı okuyup elle düzeltin.</p></div></details>
+      <details class="err"><summary>VS Code'da biçimlendirdim ama ruff format --check hâlâ kırmızı</summary><div class="body"><p>Eklentinin kullandığı ruff sürümü farklı olabilir. Terminalde alıştırma klasöründe <code>python -m ruff format alistirma.py</code> çalıştırın; GitHub'da kullanılan sürüm <code>requirements.txt</code>'teki sürümdür.</p></div></details>
+      <details class="err"><summary>Temizledim, şimdi testler kırmızı</summary><div class="body"><p>Bir değişiklik davranışı bozmuş. Hangi test kaldıysa o fonksiyondaki son değişikliğinize bakın. Bu yüzden her küçük değişiklikten sonra testleri çalıştırın.</p></div></details>
+    </section>
+
+    <section class="step" id="alistirma">
+      <div class="step-head"><span class="num">13</span><h2>Alıştırmalar</h2></div>
+      <p class="time">İlk ikisi 10'ar dakika, haftanın alıştırması 1–1,5 saat</p>
+
+      <h3>1. Ruff'ı temizleyin</h3>
+      <p>Aşağıdaki dosyayı <code>statik-deneme</code> klasörüne (<code>ruff.toml</code>'un yanına) kaydedin. <code>ruff check</code> ve <code>ruff format --check</code> temiz çıkana kadar düzeltin. Fonksiyonun adı da PEP 8'e uymalı.</p>
+      <div class="cmd"><div class="cmd-bar">harf.py<button class="copy" type="button">Kopyala</button></div><pre>import random
+def HarfNotu(puan):
+    if puan == None:
+        return None
+    if puan>=85: return 'AA'
+    if puan>=70: return 'BB'
+    if puan>=60: return 'CC'
+    return 'FF'</pre></div>
+      <div class="out">harf.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+harf.py:1:8: F401 [*] `random` imported but unused
+harf.py:2:5: N802 Function name `HarfNotu` should be lowercase
+harf.py:3:16: E711 Comparison to `None` should be `cond is None`
+harf.py:5:16: E701 Multiple statements on one line (colon)
+harf.py:6:16: E701 Multiple statements on one line (colon)
+harf.py:7:16: E701 Multiple statements on one line (colon)
+Found 7 errors.</div>
+      <details class="err"><summary>Çözümü göster</summary><div class="body"><div class="cmd"><div class="cmd-bar">harf.py<button class="copy" type="button">Kopyala</button></div><pre>def harf_notu(puan):
+    if puan is None:
+        return None
+    if puan >= 85:
+        return "AA"
+    if puan >= 70:
+        return "BB"
+    if puan >= 60:
+        return "CC"
+    return "FF"</pre></div><div class="out">All checks passed!
+1 file already formatted</div><p>Sıra fark etmez ama en kolayı: önce <code>ruff check --fix</code> (import'u siler), sonra <code>ruff format</code> (tek satırlık <code>if</code>'leri böler, tırnakları düzeltir), en son adı ve <code>is None</code>'ı elle düzeltmek.</p></div></details>
+
+      <h3>2. Ruff'ın göremediği</h3>
+      <p>Aşağıdaki kodda ruff hiçbir sorun bulmuyor. Şartnameyi okuyun, kodu <a href="#review">11. bölümdeki</a> kontrol listesiyle gözden geçirin. Hatayı bulun ve onu yakalayan bir test yazın.</p>
+      <div class="cmd"><div class="cmd-bar">indirim.py<button class="copy" type="button">Kopyala</button></div><pre><span class="c"># Fiyattan yüzde kadar indirim yapar: indirimli_fiyat(200, 10) -> 180</span>
+<span class="c"># Yüzde 0 ile 100 arasında değilse ValueError fırlatır.</span>
+def indirimli_fiyat(fiyat, yuzde):
+    if yuzde &lt; 0 or yuzde &gt; 100:
+        raise ValueError("yüzde 0 ile 100 arasında olmalı")
+    return fiyat - fiyat * yuzde / 10</pre></div>
+      <div class="out">All checks passed!</div>
+      <details class="err"><summary>Çözümü göster</summary><div class="body"><p>Yüzde hesabında 100 yerine 10'a bölünmüş: %10 indirim fiyatın tamamını siliyor. Şartnamedeki örnek doğrudan bir test olur:</p><div class="cmd"><div class="cmd-bar">test_indirim.py<button class="copy" type="button">Kopyala</button></div><pre>from indirim import indirimli_fiyat
+
+
+def test_yuzde_on_indirim():
+    assert indirimli_fiyat(200, 10) == 180</pre></div><div class="out">E       assert 0.0 == 180
+E        +  where 0.0 = indirimli_fiyat(200, 10)
+1 failed</div><p><code>/ 10</code>'u <code>/ 100</code> yapınca test geçer. Statik analiz kodun <b>nasıl</b> yazıldığına bakar; <b>ne yapması gerektiğini</b> bilmez.</p></div></details>
+
+      <h3>3. Haftanın alıştırması: Statik Analiz</h3>
+      <p>Bu hafta <code>hafta06/alistirma.py</code>'deki kod <b>çalışıyor ama kötü yazılmış</b>. Testler hazır; siz kodu temizliyorsunuz. Fonksiyonların adlarını ve ne yaptıklarını değiştirmiyorsunuz, yalnızca nasıl yazıldıklarını.</p>
+      <ol class="plain">
+        <li>Elinizdeki değişiklikleri commit'leyip push edin. Sonra GitHub'da kendi fork'unuzda <b>Sync fork → Update branch</b> düğmesine basın.</li>
+        <li>Yeni haftayı alın, klasöre girin ve bu haftanın paketini kurun:
+          <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>git pull
+cd hafta06
+python -m pip install -r requirements.txt</pre></div></li>
+        <li>Önce durumu görün:
+          <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest -v
+python -m ruff check alistirma.py</pre></div></li>
+        <li><code>alistirma.py</code>'yi temizleyin. Her değişiklikten sonra <code>python -m pytest -v</code> çalıştırın.</li>
+        <li>Bitince gönderin ve fork'unuzun <b>Actions</b> sekmesinde <code>hafta06</code> satırına bakın:
+          <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>git add .
+git commit -m "hafta06 temizlik"
+git push</pre></div></li>
+      </ol>
+      <p>Başta üç test kırmızı:</p>
+      <div class="out">test_alistirma.py::test_liste_verilmezse_her_seferinde_yeni_liste FAILED [ 92%]
+test_stil.py::test_ruff_check_temiz FAILED                               [ 96%]
+test_stil.py::test_ruff_format_temiz FAILED                              [100%]
+...
+ruff check sorun buldu:
+alistirma.py:10:1: I001 [*] Import block is un-sorted or un-formatted
+alistirma.py:10:8: F401 [*] `os` imported but unused
+...
+alistirma.py:20:5: C901 `bilet_fiyati` is too complex (6 > 5)
+...
+Found 17 errors.</div>
+      <ul class="plain">
+        <li><b><code>test_stil.py</code></b>: <code>ruff check</code> hiçbir uyarı vermemeli ve <code>ruff format</code> dosyayı değiştirmemeli. <code># noqa</code> ile susturmak işe yaramaz.</li>
+        <li><b><code>test_alistirma.py</code></b>: fonksiyonların davranışı. Temizlerken bunlar yeşil kalmalı. Başta biri kırmızı: kodda gerçek bir hata var ve ruff'ın uyarılarından biri nedenini söylüyor (<a href="#gercek">6. bölüm</a>).</li>
+      </ul>
+      <div class="note tip"><b>Sıra önerisi:</b> <code>ruff format</code> → <code>ruff check --fix</code> → kalan uyarıları birer birer, her birinden sonra testleri çalıştırarak. <code>bilet_fiyati</code>'nı en sona bırakın ve <a href="#karmasiklik">8. bölümdeki</a> gibi önce düzeni bulun: öğrenci, hafta içinde de hafta sonunda da aynı miktarda indirim alıyor.</div>
+    </section>
+
+  </main>
+</div>
+
+<footer>Yazılım Kalite Güvencesi ve Testi · Statik Test 101. Örneklerin tamamı ruff 0.17, mypy 2.4, pylint 4.1 ve pytest 9 ile çalıştırılarak doğrulanmıştır.</footer>
+
+<script>
+(function(){
+  document.querySelectorAll(".copy").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var pre=btn.closest(".cmd").querySelector("pre");
+      var text=pre.innerText;
+      function done(msg){btn.textContent=msg;setTimeout(function(){btn.textContent="Kopyala"},1600)}
+      function fallback(){var r=document.createRange();r.selectNodeContents(pre);var s=getSelection();s.removeAllRanges();s.addRange(r);done("Seçildi, Ctrl+C")}
+      try{navigator.clipboard.writeText(text).then(function(){done("Kopyalandı")},fallback)}catch(e){fallback()}
+    });
+  });
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'))});
+  function spy(){
+    var y=window.scrollY+120, cur=0;
+    secs.forEach(function(s,i){if(s&&s.offsetTop<=y)cur=i});
+    links.forEach(function(a,i){a.classList.toggle('active',i===cur)});
+  }
+  window.addEventListener('scroll',spy,{passive:true}); spy();
+})();
+</script>
+</body>
+</html>

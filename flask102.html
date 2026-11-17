@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flask 102</title>
+<meta name="description" content="Yazılım Kalite Güvencesi ve Testi dersi için Flask 102: test istemcisiyle API testi, test bağımsızlığı, Jinja şablonları ve şablon testi, SQLite ile kalıcı veri, PUT ve DELETE, veritabanlı testler.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+:root{
+  --bg:#F6F7F9;
+  --surface:#FFFFFF;
+  --ink:#1A2130;
+  --muted:#586274;
+  --line:#DDE1E8;
+  --accent:#B8430F;
+  --accent-soft:#FBEDE6;
+  --code-bg:#1C2331;
+  --code-ink:#E6E9EF;
+  --code-dim:#8B95A7;
+  --ok:#1E7A4C;
+  --ok-soft:#E4F3EA;
+  --warn-soft:#FFF4DB;
+  --warn-ink:#7A5200;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#12161E; --surface:#1A1F29; --ink:#E7EAF0; --muted:#9AA3B3; --line:#2C3340;
+    --accent:#F08A5D; --accent-soft:#2E2019; --code-bg:#0C1017; --code-ink:#E6E9EF; --code-dim:#7D8799;
+    --ok:#5CC48E; --ok-soft:#17291F; --warn-soft:#2C2412; --warn-ink:#E8C06A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#12161E; --surface:#1A1F29; --ink:#E7EAF0; --muted:#9AA3B3; --line:#2C3340;
+  --accent:#F08A5D; --accent-soft:#2E2019; --code-bg:#0C1017; --code-ink:#E6E9EF; --code-dim:#7D8799;
+  --ok:#5CC48E; --ok-soft:#17291F; --warn-soft:#2C2412; --warn-ink:#E8C06A;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16.5px;line-height:1.6;padding-inline:20px;padding-block:0 64px}
+a{color:var(--accent);text-underline-offset:2px}
+.home-btn{position:fixed;top:16px;left:16px;z-index:50;display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-family:var(--mono);font-size:13px;padding:8px 14px;border-radius:999px;box-shadow:0 2px 10px rgba(0,0,0,.1);transition:border-color .15s ease,color .15s ease}
+.home-btn:hover{border-color:var(--accent);color:var(--accent)}
+@media (max-width:480px){.home-btn{top:10px;left:10px;padding:7px 11px;font-size:12px}}
+a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:56px}
+header.top{max-width:1080px;margin:0 auto;padding-block:48px 28px;border-bottom:1px solid var(--line);margin-bottom:36px}
+.course{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+h1{font-size:clamp(30px,5vw,44px);line-height:1.12;margin:0 0 14px;letter-spacing:-.01em;text-wrap:balance}
+.lede{max-width:62ch;color:var(--muted);margin:0;font-size:17.5px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:18px;font-size:14px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:14.5px}
+nav.toc p{margin:0 0 10px;font-weight:600;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:t;display:grid;gap:2px}
+nav.toc li{counter-increment:t}
+nav.toc a{display:flex;gap:10px;padding:6px 8px;border-radius:6px;color:var(--ink);text-decoration:none}
+nav.toc a::before{content:counter(t);font-family:var(--mono);font-size:12.5px;color:var(--muted);min-width:1.4em;padding-top:1px}
+nav.toc a:hover{background:var(--surface)}
+nav.toc a.done::before{content:"✓";color:var(--ok)}
+
+main{min-width:0}
+section.step{padding-block:8px 36px;border-bottom:1px solid var(--line);margin-bottom:36px;scroll-margin-top:24px}
+section.step:last-of-type{border-bottom:0}
+.step-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}
+.num{font-family:var(--mono);font-size:14px;color:var(--accent);font-weight:500;flex:none}
+h2{font-size:25px;line-height:1.25;margin:0;text-wrap:balance}
+h3{font-size:17px;margin:26px 0 8px}
+p{margin:10px 0;max-width:68ch}
+.time{font-size:13.5px;color:var(--muted);margin:0 0 14px}
+ul.plain,ol.plain{padding-left:1.25em;margin:10px 0;max-width:68ch}
+ul.plain li,ol.plain li{margin:5px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--surface);border:1px solid var(--line);padding:1px 5px;border-radius:4px}
+kbd{font-family:var(--mono);font-size:.85em;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--surface)}
+
+.cmd{position:relative;margin:12px 0 16px;background:var(--code-bg);color:var(--code-ink);border-radius:8px;overflow:hidden}
+.cmd pre{margin:0;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:14px;line-height:1.65}
+.cmd .c{color:var(--code-dim)}
+.cmd .v{color:#F5B38F}
+.cmd-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 10px 8px 18px;border-bottom:1px solid rgba(255,255,255,.08);font-size:12.5px;color:var(--code-dim);font-family:var(--mono)}
+.copy{font:500 12.5px var(--sans);color:var(--code-ink);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:4px 10px;cursor:pointer}
+.copy:hover{background:rgba(255,255,255,.16)}
+.out{background:var(--surface);border:1px solid var(--line);border-radius:8px;margin:-6px 0 16px;padding:12px 16px;font-family:var(--mono);font-size:13.5px;color:var(--muted);overflow-x:auto;white-space:pre}
+.out::before{content:"Beklenen çıktı";display:block;font-family:var(--sans);font-size:12px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;color:var(--muted)}
+
+.note{border-radius:8px;padding:12px 16px;margin:14px 0;max-width:72ch;font-size:15.5px}
+.note.tip{background:var(--ok-soft)}
+.note.warn{background:var(--warn-soft);color:var(--warn-ink)}
+.note.warn a{color:inherit}
+.note b{font-weight:600}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:14px 0 0;flex-wrap:wrap}
+.tabs button{font:500 14.5px var(--sans);color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;padding:8px 14px;cursor:pointer;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.panel{padding-top:6px}
+
+.you{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:0 0 36px}
+.you h2{font-size:18px;margin:0 0 4px}
+.you p{margin:0 0 14px;color:var(--muted);font-size:15px}
+.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.fields label{display:grid;gap:4px;font-size:13.5px;color:var(--muted)}
+.fields input{font:15px var(--sans);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+
+.check{display:grid;gap:8px;margin:12px 0}
+.check label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;max-width:68ch}
+.check input{margin-top:5px;accent-color:var(--accent);width:16px;height:16px;flex:none}
+
+details.err{border:1px solid var(--line);border-radius:8px;background:var(--surface);margin:10px 0}
+details.err summary{cursor:pointer;padding:12px 16px;font-family:var(--mono);font-size:14px;list-style:none}
+details.err summary::-webkit-details-marker{display:none}
+details.err summary::before{content:"+";display:inline-block;width:1.2em;color:var(--accent)}
+details.err[open] summary::before{content:"–"}
+details.err .body{padding:0 16px 12px}
+
+table.levels{border-collapse:collapse;width:100%;font-size:15px;margin:10px 0}
+.tbl{overflow-x:auto}
+table.levels th,table.levels td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+table.levels th{font-size:12.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tag{display:inline-block;font-size:12.5px;padding:1px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-weight:500;white-space:nowrap}
+.tag.opt{background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+
+footer{max-width:1080px;margin:24px auto 0;color:var(--muted);font-size:14px}
+
+@media (max-width:860px){
+  .wrap{grid-template-columns:1fr;gap:0}
+  nav.toc{position:static;margin-bottom:28px;border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--surface)}
+  .fields{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+<style>nav.toc a.active{background:var(--surface);color:var(--accent);font-weight:500}</style>
+</head>
+<body>
+<a class="home-btn" href="index.html">← Ana sayfa</a>
+<header class="top">
+  <p class="course">Yazılım Kalite Güvencesi ve Testi · 9. hafta</p>
+  <h1>Flask 102: test, şablon ve veritabanı</h1>
+  <p class="lede">Flask 101'de kütüphane API'sini yazdık ve Postman ile denedik. Bu hafta üç adım atıyoruz: API'yi pytest ile <b>test etmek</b>, kitapları bir HTML sayfasında göstermek (<b>şablonlar</b>) ve kitapları sunucu kapanınca kaybolmayacak şekilde bir <b>veritabanında</b> saklamak. Her adımda testler de büyüyor. Örnekleri sırayla kendi bilgisayarınızda çalıştırın.</p>
+  <div class="meta"><span>Süre: <b>2 saat, bölüm bölüm</b></span><span>Gerekenler: <b>Flask 101'deki flask-deneme klasörü, Postman</b></span></div>
+</header>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Bölümler">
+    <p>Bölümler</p>
+    <ol id="toc">
+      <li><a href="#kaldik">Nerede kalmıştık?</a></li>
+      <li><a href="#istemci">Test istemcisi</a></li>
+      <li><a href="#bagimsiz">Testler birbirini etkilememeli</a></li>
+      <li><a href="#sablon">Şablonlar</a></li>
+      <li><a href="#sablon-test">Şablonu test etmek</a></li>
+      <li><a href="#sqlite">Veritabanı: SQLite</a></li>
+      <li><a href="#put-delete">PUT ve DELETE</a></li>
+      <li><a href="#db-test">Veritabanlı testler</a></li>
+      <li><a href="#hatalar">Sık hatalar</a></li>
+      <li><a href="#deneyin">Kendinizi deneyin</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <section class="step" id="kaldik">
+      <div class="step-head"><span class="num">01</span><h2>Nerede kalmıştık?</h2></div>
+      <p class="time">5 dakika</p>
+      <p>Flask 101'in sonunda <code>flask-deneme</code> klasöründe bir <code>app.py</code> vardı: kitapları listeleyen, tek kitap getiren (yoksa 404) ve POST ile kitap ekleyen (başlık yoksa 400) küçük bir API. Bu sayfada aynı klasörde devam ediyoruz. Dosyanız elinizde değilse aşağıdan alın.</p>
+      <details class="err"><summary>app.py (Flask 101'in sonundaki hâli)</summary><div class="body"><div class="cmd"><div class="cmd-bar">app.py<button class="copy" type="button">Kopyala</button></div><pre>from flask import Flask, request
+
+app = Flask(__name__)
+app.json.ensure_ascii = False
+app.json.sort_keys = False
+
+kitaplar = [
+    {"id": 1, "baslik": "Kürk Mantolu Madonna", "yazar": "Sabahattin Ali", "yil": 1943},
+    {"id": 2, "baslik": "Tutunamayanlar", "yazar": "Oğuz Atay", "yil": 1972},
+    {"id": 3, "baslik": "Kuyucaklı Yusuf", "yazar": "Sabahattin Ali", "yil": 1937},
+]
+
+
+@app.get("/kitaplar")
+def kitap_listesi():
+    yazar = request.args.get("yazar")
+    if yazar is None:
+        return kitaplar
+    sonuc = []
+    for kitap in kitaplar:
+        if yazar.lower() in kitap["yazar"].lower():
+            sonuc.append(kitap)
+    return sonuc
+
+
+@app.get("/kitaplar/&lt;int:kitap_id&gt;")
+def kitap_getir(kitap_id):
+    for kitap in kitaplar:
+        if kitap["id"] == kitap_id:
+            return kitap
+    return {"hata": "kitap bulunamadı"}, 404
+
+
+@app.post("/kitaplar")
+def kitap_ekle():
+    veri = request.get_json(silent=True)
+    if not veri or not veri.get("baslik"):
+        return {"hata": "baslik zorunlu"}, 400
+    kitap = {
+        "id": len(kitaplar) + 1,
+        "baslik": veri["baslik"],
+        "yazar": veri.get("yazar", ""),
+        "yil": veri.get("yil"),
+    }
+    kitaplar.append(kitap)
+    return kitap, 201
+
+
+if __name__ == "__main__":
+    app.run(debug=True)</pre></div></div></details>
+      <p>Sunucuyu başlatın (<code>python app.py</code>) ve Postman'de <code>GET http://127.0.0.1:5000/kitaplar</code> isteğinin üç kitap döndürdüğünü görün. Sonra sunucuyu <kbd>Ctrl</kbd>+<kbd>C</kbd> ile durdurun; testler için sunucunun açık olması gerekmiyor.</p>
+    </section>
+
+    <section class="step" id="istemci">
+      <div class="step-head"><span class="num">02</span><h2>Test istemcisi</h2></div>
+      <p class="time">20 dakika</p>
+      <p>Her değişiklikten sonra Postman'de istekleri tek tek gönderip yanıtlara gözle bakmak, pytest öncesi <code>print</code> ile test etmeye benziyor. Flask'ın <b>test istemcisi</b>, sunucu çalıştırmadan uygulamaya istek gönderir. Böylece API testleri de sıradan pytest testleri olur:</p>
+      <div class="cmd"><div class="cmd-bar">test_app.py<button class="copy" type="button">Kopyala</button></div><pre>from app import app
+
+
+def test_kitap_listesi():
+    client = app.test_client()
+    yanit = client.get("/kitaplar")
+    assert yanit.status_code == 200
+    assert len(yanit.get_json()) == 3
+
+
+def test_kitap_getir():
+    client = app.test_client()
+    yanit = client.get("/kitaplar/2")
+    assert yanit.status_code == 200
+    assert yanit.get_json()["baslik"] == "Tutunamayanlar"
+
+
+def test_olmayan_kitap_404():
+    client = app.test_client()
+    yanit = client.get("/kitaplar/99")
+    assert yanit.status_code == 404
+    assert yanit.get_json() == {"hata": "kitap bulunamadı"}</pre></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest test_app.py -v</pre></div>
+      <div class="out">test_app.py::test_kitap_listesi PASSED                                   [ 33%]
+test_app.py::test_kitap_getir PASSED                                     [ 66%]
+test_app.py::test_olmayan_kitap_404 PASSED                               [100%]
+
+============================== 3 passed</div>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Yazılan</th><th>Anlamı</th></tr></thead>
+        <tbody>
+          <tr><td><code>client = app.test_client()</code></td><td>Uygulamaya istek gönderecek sahte bir istemci.</td></tr>
+          <tr><td><code>client.get("/kitaplar/2")</code></td><td>GET isteği gönderir, yanıtı döndürür.</td></tr>
+          <tr><td><code>client.post("/kitaplar", json={...})</code></td><td>POST isteği; sözlük JSON olarak gövdeye konur.</td></tr>
+          <tr><td><code>yanit.status_code</code></td><td>Durum kodu: <code>200</code>, <code>404</code>…</td></tr>
+          <tr><td><code>yanit.get_json()</code></td><td>Yanıt gövdesi, sözlük ya da liste olarak.</td></tr>
+        </tbody>
+      </table></div>
+      <p>Testler çalışırken sunucunun açık olması gerekmez; test istemcisi uygulamayı doğrudan çağırır. <code>from app import app</code> satırı sunucuyu başlatmaz, çünkü <code>app.run</code> <code>if __name__ == "__main__":</code> bloğunun içinde.</p>
+      <p>Test, pytest 101'deki AAA düzeninde: <b>hazırla</b> (istemci), <b>çalıştır</b> (istek), <b>kontrol et</b> (durum kodu ve gövde). Her ikisini de kontrol edin: doğru kod ama yanlış veri de bir hatadır.</p>
+    </section>
+
+    <section class="step" id="bagimsiz">
+      <div class="step-head"><span class="num">03</span><h2>Testler birbirini etkilememeli</h2></div>
+      <p class="time">10 dakika</p>
+      <p><code>test_app.py</code>'nin <b>sonuna</b> bir POST testi ekleyin:</p>
+      <div class="cmd"><div class="cmd-bar">test_app.py (sona ekleyin)<button class="copy" type="button">Kopyala</button></div><pre>def test_kitap_ekle():
+    client = app.test_client()
+    kitap = {"baslik": "Beyaz Kale", "yazar": "Orhan Pamuk", "yil": 1985}
+    yanit = client.post("/kitaplar", json=kitap)
+    assert yanit.status_code == 201
+    assert yanit.get_json()["id"] == 4</pre></div>
+      <div class="out">4 passed</div>
+      <p>Hepsi geçti. Şimdi aynı testi kesip dosyanın <b>en üstüne</b>, <code>import</code> satırının hemen altına taşıyın ve yeniden çalıştırın:</p>
+      <div class="out">    def test_kitap_listesi():
+        client = app.test_client()
+        yanit = client.get("/kitaplar")
+        assert yanit.status_code == 200
+&gt;       assert len(yanit.get_json()) == 3
+E       AssertionError: assert 4 == 3
+...
+test_app.py:16: AssertionError
+...
+FAILED test_app.py::test_kitap_listesi - AssertionError: assert 4 == 3
+========================= 1 failed, 3 passed</div>
+      <p>Kodda bir değişiklik yok, yalnızca testlerin sırası değişti. POST testi listeye Beyaz Kale'yi ekledi ve kitap, aynı test çalışması boyunca listede kaldı. Sonraki test 3 değil 4 kitap buldu. Bir testin sonucu başka bir testin önce çalışıp çalışmadığına bağlıysa testler <b>bağımsız</b> değildir. Böyle testler bazen geçer bazen kalır, ve bunun nedenini bulmak zordur.</p>
+      <p>Çözüm: her test, verileri <b>başlangıç hâline</b> getirerek başlasın. <code>app.py</code>'nin son hâli (bütün dosyayı bununla değiştirin):</p>
+      <div class="cmd"><div class="cmd-bar">app.py<button class="copy" type="button">Kopyala</button></div><pre>from flask import Flask, request
+
+app = Flask(__name__)
+app.json.ensure_ascii = False
+app.json.sort_keys = False
+
+BASLANGIC_KITAPLARI = [
+    {"id": 1, "baslik": "Kürk Mantolu Madonna", "yazar": "Sabahattin Ali", "yil": 1943},
+    {"id": 2, "baslik": "Tutunamayanlar", "yazar": "Oğuz Atay", "yil": 1972},
+    {"id": 3, "baslik": "Kuyucaklı Yusuf", "yazar": "Sabahattin Ali", "yil": 1937},
+]
+kitaplar = []
+
+
+def verileri_sifirla():
+    kitaplar.clear()
+    for kitap in BASLANGIC_KITAPLARI:
+        kitaplar.append(dict(kitap))
+
+
+verileri_sifirla()
+
+
+@app.get("/kitaplar")
+def kitap_listesi():
+    yazar = request.args.get("yazar")
+    if yazar is None:
+        return kitaplar
+    sonuc = []
+    for kitap in kitaplar:
+        if yazar.lower() in kitap["yazar"].lower():
+            sonuc.append(kitap)
+    return sonuc
+
+
+@app.get("/kitaplar/&lt;int:kitap_id&gt;")
+def kitap_getir(kitap_id):
+    for kitap in kitaplar:
+        if kitap["id"] == kitap_id:
+            return kitap
+    return {"hata": "kitap bulunamadı"}, 404
+
+
+@app.post("/kitaplar")
+def kitap_ekle():
+    veri = request.get_json(silent=True)
+    if not veri or not veri.get("baslik"):
+        return {"hata": "baslik zorunlu"}, 400
+    kitap = {
+        "id": len(kitaplar) + 1,
+        "baslik": veri["baslik"],
+        "yazar": veri.get("yazar", ""),
+        "yil": veri.get("yil"),
+    }
+    kitaplar.append(kitap)
+    return kitap, 201
+
+
+if __name__ == "__main__":
+    app.run(debug=True)</pre></div>
+      <ul class="plain">
+        <li><code>BASLANGIC_KITAPLARI</code> hiç değişmeyen ilk veridir. Adı büyük harfle, çünkü PEP 8'e göre sabit (Statik Test 101).</li>
+        <li><code>verileri_sifirla()</code> listeyi boşaltır (<code>clear</code>) ve başlangıç kitaplarını yeniden doldurur. <code>dict(kitap)</code> kitabın bir kopyasını ekler; böylece bir test bir kitabı değiştirse bile başlangıç verisi bozulmaz.</li>
+        <li>Dosya ilk çalıştığında da bir kez çağrılır; sunucu yine 3 kitapla açılır.</li>
+      </ul>
+      <p><code>test_app.py</code>'de her testin ilk satırı artık sıfırlama:</p>
+      <div class="cmd"><div class="cmd-bar">test_app.py<button class="copy" type="button">Kopyala</button></div><pre>from app import app, verileri_sifirla
+
+
+def test_kitap_ekle():
+    verileri_sifirla()
+    client = app.test_client()
+    kitap = {"baslik": "Beyaz Kale", "yazar": "Orhan Pamuk", "yil": 1985}
+    yanit = client.post("/kitaplar", json=kitap)
+    assert yanit.status_code == 201
+    assert yanit.get_json()["id"] == 4
+
+
+def test_kitap_listesi():
+    verileri_sifirla()
+    client = app.test_client()
+    yanit = client.get("/kitaplar")
+    assert yanit.status_code == 200
+    assert len(yanit.get_json()) == 3
+
+
+def test_kitap_getir():
+    verileri_sifirla()
+    client = app.test_client()
+    yanit = client.get("/kitaplar/2")
+    assert yanit.status_code == 200
+    assert yanit.get_json()["baslik"] == "Tutunamayanlar"
+
+
+def test_olmayan_kitap_404():
+    verileri_sifirla()
+    client = app.test_client()
+    yanit = client.get("/kitaplar/99")
+    assert yanit.status_code == 404
+    assert yanit.get_json() == {"hata": "kitap bulunamadı"}</pre></div>
+      <div class="out">4 passed</div>
+      <p>Testler artık hangi sırada çalışırsa çalışsın aynı sonucu verir. Her testin başında aynı satırı yazmak tekrar gibi görünüyor; ileride bunu otomatik yapmanın yolunu göreceğiz.</p>
+    </section>
+
+    <section class="step" id="sablon">
+      <div class="step-head"><span class="num">04</span><h2>Şablonlar: JSON yerine HTML sayfa</h2></div>
+      <p class="time">20 dakika</p>
+      <p>API, programlar için JSON döndürür. İnsanların tarayıcıda okuyacağı bir sayfa için ise HTML gerekir. HTML'i Python kodunun içinde metin olarak birleştirmek hem zor hem tehlikelidir. Bunun yerine HTML'i ayrı bir dosyaya, bir <b>şablona</b> yazarız; değişecek yerleri işaretleriz, Flask doldurur. Flask'ın şablon dili <b>Jinja</b>'dır.</p>
+      <p><code>flask-deneme</code> klasöründe <code>templates</code> adında bir klasör açın. Flask şablonları yalnızca bu adlı klasörde arar. İçine üç dosya koyun:</p>
+      <div class="cmd"><div class="cmd-bar">templates/kitaplar.html<button class="copy" type="button">Kopyala</button></div><pre>&lt;!doctype html&gt;
+&lt;html lang="tr"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;title&gt;Kütüphane&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Kitaplar&lt;/h1&gt;
+  &lt;ul&gt;
+    {% for kitap in kitaplar %}
+    &lt;li&gt;&lt;a href="/kitap/{{ kitap.id }}"&gt;{{ kitap.baslik }}&lt;/a&gt; ({{ kitap.yazar }})&lt;/li&gt;
+    {% else %}
+    &lt;li&gt;Henüz kitap yok.&lt;/li&gt;
+    {% endfor %}
+  &lt;/ul&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre></div>
+      <div class="cmd"><div class="cmd-bar">templates/kitap.html<button class="copy" type="button">Kopyala</button></div><pre>&lt;!doctype html&gt;
+&lt;html lang="tr"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;title&gt;{{ kitap.baslik }}&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;{{ kitap.baslik }}&lt;/h1&gt;
+  &lt;p&gt;Yazar: {{ kitap.yazar }}&lt;/p&gt;
+  &lt;p&gt;Yıl: {{ kitap.yil }}&lt;/p&gt;
+  &lt;p&gt;&lt;a href="/"&gt;Bütün kitaplar&lt;/a&gt;&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre></div>
+      <div class="cmd"><div class="cmd-bar">templates/bulunamadi.html<button class="copy" type="button">Kopyala</button></div><pre>&lt;!doctype html&gt;
+&lt;html lang="tr"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;title&gt;Bulunamadı&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Kitap bulunamadı&lt;/h1&gt;
+  &lt;p&gt;&lt;a href="/"&gt;Bütün kitaplar&lt;/a&gt;&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre></div>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Şablonda</th><th>Anlamı</th></tr></thead>
+        <tbody>
+          <tr><td><code>{{ kitap.baslik }}</code></td><td>Değeri buraya yaz. Sözlüğün <code>baslik</code> anahtarı, <code>kitap["baslik"]</code> ile aynı.</td></tr>
+          <tr><td><code>{% for kitap in kitaplar %}</code> … <code>{% endfor %}</code></td><td>Listedeki her kitap için aradaki satırı tekrarla. Python'daki <code>for</code> gibi, ama girinti yerine <code>endfor</code> ile kapanır.</td></tr>
+          <tr><td><code>{% else %}</code></td><td>Liste boşsa bunu yaz.</td></tr>
+        </tbody>
+      </table></div>
+      <p>Şimdi <code>app.py</code>'de ilk satırı <code>from flask import Flask, render_template, request</code> yapın ve <code>if __name__</code> satırının üstüne iki route ekleyin:</p>
+      <div class="cmd"><div class="cmd-bar">app.py (ekleyin)<button class="copy" type="button">Kopyala</button></div><pre>@app.get("/")
+def ana_sayfa():
+    return render_template("kitaplar.html", kitaplar=kitaplar)
+
+
+@app.get("/kitap/&lt;int:kitap_id&gt;")
+def kitap_sayfasi(kitap_id):
+    for kitap in kitaplar:
+        if kitap["id"] == kitap_id:
+            return render_template("kitap.html", kitap=kitap)
+    return render_template("bulunamadi.html"), 404</pre></div>
+      <p><code>render_template("kitaplar.html", kitaplar=kitaplar)</code>: şablonu bul, içindeki <code>kitaplar</code> adına bizim listemizi ver, sonucu HTML olarak döndür. Sunucuyu başlatıp tarayıcıda <b><code>http://127.0.0.1:5000/</code></b> adresini açın; sayfanın kaynağı (<kbd>Ctrl</kbd>+<kbd>U</kbd>) şöyledir:</p>
+      <div class="out">&lt;!doctype html&gt;
+&lt;html lang="tr"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;title&gt;Kütüphane&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Kitaplar&lt;/h1&gt;
+  &lt;ul&gt;
+    
+    &lt;li&gt;&lt;a href="/kitap/1"&gt;Kürk Mantolu Madonna&lt;/a&gt; (Sabahattin Ali)&lt;/li&gt;
+    
+    &lt;li&gt;&lt;a href="/kitap/2"&gt;Tutunamayanlar&lt;/a&gt; (Oğuz Atay)&lt;/li&gt;
+    
+    &lt;li&gt;&lt;a href="/kitap/3"&gt;Kuyucaklı Yusuf&lt;/a&gt; (Sabahattin Ali)&lt;/li&gt;
+    
+  &lt;/ul&gt;
+&lt;/body&gt;
+&lt;/html&gt;</div>
+      <p>Bir kitaba tıklayınca <code>/kitap/2</code> gibi ayrıntı sayfası açılır. <code>/kitap/99</code> ise “Kitap bulunamadı” sayfasını 404 koduyla döndürür. Şablondaki boş satırlar Jinja komutlarının kaldığı yerlerdir; tarayıcı onları göstermez.</p>
+      <div class="note tip"><b>Aynı veri, iki biçim:</b> <code>/kitaplar</code> programlara JSON, <code>/</code> insanlara HTML veriyor. İkisi de aynı <code>kitaplar</code> listesini kullanıyor.</div>
+    </section>
+
+    <section class="step" id="sablon-test">
+      <div class="step-head"><span class="num">05</span><h2>Şablonu test etmek</h2></div>
+      <p class="time">15 dakika</p>
+      <p>Sayfa testi de API testi gibidir; tek fark, yanıt JSON değil metindir. <code>yanit.get_data(as_text=True)</code> sayfanın HTML'ini metin olarak verir; içinde beklenen şeyin geçip geçmediğine <code>in</code> ile bakarız:</p>
+      <div class="cmd"><div class="cmd-bar">test_sayfalar.py<button class="copy" type="button">Kopyala</button></div><pre>from app import app, verileri_sifirla
+
+
+def test_ana_sayfa_kitaplari_listeler():
+    verileri_sifirla()
+    client = app.test_client()
+    yanit = client.get("/")
+    assert yanit.status_code == 200
+    html = yanit.get_data(as_text=True)
+    assert "Tutunamayanlar" in html
+    assert "Kürk Mantolu Madonna" in html
+
+
+def test_kitap_sayfasi():
+    verileri_sifirla()
+    client = app.test_client()
+    yanit = client.get("/kitap/2")
+    assert yanit.status_code == 200
+    assert "&lt;h1&gt;Tutunamayanlar&lt;/h1&gt;" in yanit.get_data(as_text=True)
+
+
+def test_olmayan_kitap_sayfasi_404():
+    verileri_sifirla()
+    client = app.test_client()
+    yanit = client.get("/kitap/99")
+    assert yanit.status_code == 404
+    assert "Kitap bulunamadı" in yanit.get_data(as_text=True)
+
+
+def test_basliktaki_html_kacislanir():
+    verileri_sifirla()
+    client = app.test_client()
+    client.post("/kitaplar", json={"baslik": "&lt;script&gt;alert(1)&lt;/script&gt;"})
+    html = client.get("/kitap/4").get_data(as_text=True)
+    assert "&lt;script&gt;" not in html
+    assert "&amp;lt;script&amp;gt;" in html</pre></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest test_sayfalar.py -v</pre></div>
+      <div class="out">test_sayfalar.py::test_ana_sayfa_kitaplari_listeler PASSED               [ 25%]
+test_sayfalar.py::test_kitap_sayfasi PASSED                              [ 50%]
+test_sayfalar.py::test_olmayan_kitap_sayfasi_404 PASSED                  [ 75%]
+test_sayfalar.py::test_basliktaki_html_kacislanir PASSED                 [100%]
+
+============================== 4 passed ==============================</div>
+      <h3>Son test neden önemli?</h3>
+      <p>Bir kullanıcı kitap başlığı olarak <code>&lt;script&gt;alert(1)&lt;/script&gt;</code> gönderirse ve sayfa bunu olduğu gibi yazarsa, sayfayı açan herkesin tarayıcısında o kod çalışır. Bu, en yaygın web güvenlik açıklarından biridir (XSS). Jinja, <code>{{ }}</code> içindeki değerdeki <code>&lt;</code> ve <code>&gt;</code> işaretlerini kendiliğinden <code>&amp;lt;</code> ve <code>&amp;gt;</code> yapar (<b>kaçışlama</b>). Tarayıcı bunları kod olarak değil metin olarak gösterir. Son test bu korumanın yerinde olduğunu kontrol ediyor.</p>
+      <p>Deneyin: <code>kitap.html</code>'de <code>&lt;h1&gt;{{ kitap.baslik }}&lt;/h1&gt;</code> satırını <code>&lt;h1&gt;{{ kitap.baslik|safe }}&lt;/h1&gt;</code> yapın. <code>|safe</code> “bu değer güvenli, kaçışlama” demektir:</p>
+      <div class="out">&gt;       assert "&lt;script&gt;" not in html
+E       AssertionError: assert '&lt;script&gt;' not in '&lt;!doctype h...dy&gt;\n&lt;/html&gt;'
+E
+E         '&lt;script&gt;' is contained here:
+E           dy&gt;
+E             &lt;h1&gt;&lt;script&gt;alert(1)&lt;/script&gt;&lt;/h1&gt;
+...
+FAILED test_sayfalar.py::test_basliktaki_html_kacislanir - AssertionError: as...
+1 failed, 3 passed</div>
+      <p>Test, güvenlik açığını yakaladı. Devam etmeden önce <code>|safe</code>'i silin.</p>
+      <div class="note warn"><b>|safe kullanmayın.</b> Kullanıcıdan gelen hiçbir değeri <code>|safe</code> ile yazmayın. Bu tür açıkları arayan araçlara 11. haftada bakacağız.</div>
+    </section>
+
+    <section class="step" id="sqlite">
+      <div class="step-head"><span class="num">06</span><h2>Veritabanı: SQLite</h2></div>
+      <p class="time">20 dakika</p>
+      <p>Flask 101'de şunu görmüştük: POST ile eklenen kitap, sunucu kapanınca kayboluyor, çünkü kitaplar bellekteki bir listede. Kalıcı olması için bir veritabanı gerekir. <b>SQLite</b>, verileri tek bir dosyada tutan küçük bir veritabanıdır; Python ile birlikte gelir (<code>import sqlite3</code>), ayrıca kurulmaz. SQL'i biliyorsunuz; burada yalnızca Python'dan nasıl kullanıldığına bakacağız.</p>
+      <p><code>app.py</code>'nin tamamını şununla değiştirin. Route adresleri ve şablonlar aynı kalıyor; değişen, verinin nereden okunduğu. Bir de PUT ve DELETE ekliyoruz (<a href="#put-delete">7. bölüm</a>).</p>
+      <div class="cmd"><div class="cmd-bar">app.py<button class="copy" type="button">Kopyala</button></div><pre>import os
+import sqlite3
+
+from flask import Flask, render_template, request
+
+app = Flask(__name__)
+app.json.ensure_ascii = False
+app.json.sort_keys = False
+app.config["VERITABANI"] = "kutuphane.db"
+
+BASLANGIC_KITAPLARI = [
+    ("Kürk Mantolu Madonna", "Sabahattin Ali", 1943),
+    ("Tutunamayanlar", "Oğuz Atay", 1972),
+    ("Kuyucaklı Yusuf", "Sabahattin Ali", 1937),
+]
+
+
+def baglan():
+    baglanti = sqlite3.connect(app.config["VERITABANI"])
+    baglanti.row_factory = sqlite3.Row
+    return baglanti
+
+
+def verileri_sifirla():
+    baglanti = baglan()
+    baglanti.execute("DROP TABLE IF EXISTS kitaplar")
+    baglanti.execute(
+        "CREATE TABLE kitaplar"
+        " (id INTEGER PRIMARY KEY, baslik TEXT, yazar TEXT, yil INTEGER)"
+    )
+    for kitap in BASLANGIC_KITAPLARI:
+        baglanti.execute(
+            "INSERT INTO kitaplar (baslik, yazar, yil) VALUES (?, ?, ?)", kitap
+        )
+    baglanti.commit()
+    baglanti.close()
+
+
+def tum_kitaplar():
+    baglanti = baglan()
+    satirlar = baglanti.execute("SELECT * FROM kitaplar ORDER BY id").fetchall()
+    baglanti.close()
+    sonuc = []
+    for satir in satirlar:
+        sonuc.append(dict(satir))
+    return sonuc
+
+
+def kitap_bul(kitap_id):
+    baglanti = baglan()
+    satir = baglanti.execute(
+        "SELECT * FROM kitaplar WHERE id = ?", (kitap_id,)
+    ).fetchone()
+    baglanti.close()
+    if satir is None:
+        return None
+    return dict(satir)
+
+
+@app.get("/kitaplar")
+def kitap_listesi():
+    return tum_kitaplar()
+
+
+@app.get("/kitaplar/&lt;int:kitap_id&gt;")
+def kitap_getir(kitap_id):
+    kitap = kitap_bul(kitap_id)
+    if kitap is None:
+        return {"hata": "kitap bulunamadı"}, 404
+    return kitap
+
+
+@app.post("/kitaplar")
+def kitap_ekle():
+    veri = request.get_json(silent=True)
+    if not veri or not veri.get("baslik"):
+        return {"hata": "baslik zorunlu"}, 400
+    baglanti = baglan()
+    imlec = baglanti.execute(
+        "INSERT INTO kitaplar (baslik, yazar, yil) VALUES (?, ?, ?)",
+        (veri["baslik"], veri.get("yazar", ""), veri.get("yil")),
+    )
+    baglanti.commit()
+    yeni_id = imlec.lastrowid
+    baglanti.close()
+    return kitap_bul(yeni_id), 201
+
+
+@app.put("/kitaplar/&lt;int:kitap_id&gt;")
+def kitap_guncelle(kitap_id):
+    if kitap_bul(kitap_id) is None:
+        return {"hata": "kitap bulunamadı"}, 404
+    veri = request.get_json(silent=True)
+    if not veri or not veri.get("baslik"):
+        return {"hata": "baslik zorunlu"}, 400
+    baglanti = baglan()
+    baglanti.execute(
+        "UPDATE kitaplar SET baslik = ?, yazar = ?, yil = ? WHERE id = ?",
+        (veri["baslik"], veri.get("yazar", ""), veri.get("yil"), kitap_id),
+    )
+    baglanti.commit()
+    baglanti.close()
+    return kitap_bul(kitap_id)
+
+
+@app.delete("/kitaplar/&lt;int:kitap_id&gt;")
+def kitap_sil(kitap_id):
+    if kitap_bul(kitap_id) is None:
+        return {"hata": "kitap bulunamadı"}, 404
+    baglanti = baglan()
+    baglanti.execute("DELETE FROM kitaplar WHERE id = ?", (kitap_id,))
+    baglanti.commit()
+    baglanti.close()
+    return {"mesaj": "kitap silindi"}
+
+
+@app.get("/")
+def ana_sayfa():
+    return render_template("kitaplar.html", kitaplar=tum_kitaplar())
+
+
+@app.get("/kitap/&lt;int:kitap_id&gt;")
+def kitap_sayfasi(kitap_id):
+    kitap = kitap_bul(kitap_id)
+    if kitap is None:
+        return render_template("bulunamadi.html"), 404
+    return render_template("kitap.html", kitap=kitap)
+
+
+if __name__ == "__main__":
+    if not os.path.exists(app.config["VERITABANI"]):
+        verileri_sifirla()
+    app.run(debug=True)</pre></div>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Kod</th><th>Anlamı</th></tr></thead>
+        <tbody>
+          <tr><td><code>app.config["VERITABANI"]</code></td><td>Veritabanı dosyasının adı. Testlerde bunu değiştireceğiz (<a href="#db-test">8. bölüm</a>).</td></tr>
+          <tr><td><code>baglan()</code></td><td>Veritabanına bağlanır. <code>row_factory = sqlite3.Row</code> satırları sütun adıyla okunabilir yapar; <code>dict(satir)</code> onları Flask'ın JSON'a çevirebileceği sözlüğe dönüştürür.</td></tr>
+          <tr><td><code>verileri_sifirla()</code></td><td>3. bölümdeki fonksiyonun veritabanlı hâli: tabloyu silip yeniden kurar ve başlangıç kitaplarını ekler.</td></tr>
+          <tr><td><code>"... WHERE id = ?", (kitap_id,)</code></td><td>Değer SQL metnine elle eklenmez, <code>?</code> yerine sqlite3 koyar. Böylece kullanıcıdan gelen bir değer SQL komutu gibi çalıştırılamaz (SQL enjeksiyonu). <code>(kitap_id,)</code>'deki virgül, tek elemanlı bir demet olduğunu belirtir.</td></tr>
+          <tr><td><code>baglanti.commit()</code></td><td>Değişikliği kalıcı yapar. Unutulursa ekleme, güncelleme ve silme kaydedilmez.</td></tr>
+          <tr><td><code>baglanti.close()</code></td><td>Bağlantıyı kapatır. Her fonksiyon işini bitirince kapatıyor.</td></tr>
+          <tr><td><code>imlec.lastrowid</code></td><td>Az önce eklenen satırın <code>id</code>'si.</td></tr>
+          <tr><td><code>if not os.path.exists(...)</code></td><td>Sunucu ilk kez açılırken veritabanı dosyası yoksa oluşturur. Dosya varsa dokunmaz; eklenen kitaplar kalır.</td></tr>
+        </tbody>
+      </table></div>
+      <p>Sunucuyu başlatın. Klasörde <code>kutuphane.db</code> dosyası oluşur. Postman ile bir kitap ekleyin (Flask 101, 7. bölüm), sunucuyu durdurup yeniden başlatın ve <code>GET /kitaplar</code>'a bakın: eklediğiniz kitap hâlâ orada.</p>
+      <div class="note tip"><b>Sorgu parametresi</b> (<code>?yazar=</code>) bu sürümde yok; sayfayı kısa tutmak için çıkardık.</div>
+    </section>
+
+    <section class="step" id="put-delete">
+      <div class="step-head"><span class="num">07</span><h2>PUT ve DELETE</h2></div>
+      <p class="time">15 dakika</p>
+      <p>Flask 101'de dört metottan ikisini kullanmıştık. Uygulama artık dördünü de destekliyor; bir kaydın oluşturulması, okunması, güncellenmesi ve silinmesine kısaca <b>CRUD</b> denir:</p>
+      <div class="tbl"><table class="levels">
+        <thead><tr><th>Metot</th><th>Adres</th><th>Ne yapar?</th><th>Başarılı</th><th>Hatalı</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET</code></td><td><code>/kitaplar/2</code></td><td>Okur</td><td>200</td><td>404 kitap yok</td></tr>
+          <tr><td><code>POST</code></td><td><code>/kitaplar</code></td><td>Ekler</td><td>201</td><td>400 başlık yok</td></tr>
+          <tr><td><code>PUT</code></td><td><code>/kitaplar/2</code></td><td>Kitabın bütün alanlarını yenileriyle değiştirir</td><td>200</td><td>404 kitap yok, 400 başlık yok</td></tr>
+          <tr><td><code>DELETE</code></td><td><code>/kitaplar/2</code></td><td>Siler</td><td>200</td><td>404 kitap yok</td></tr>
+        </tbody>
+      </table></div>
+      <p>Postman'de metodu <b>PUT</b>, adresi <code>http://127.0.0.1:5000/kitaplar/2</code> yapın; gövdeye (Body → raw → JSON) kitabın yeni hâlini yazın:</p>
+      <div class="cmd"><div class="cmd-bar">Postman → Body → raw → JSON<button class="copy" type="button">Kopyala</button></div><pre>{"baslik": "Tutunamayanlar", "yazar": "Oğuz Atay", "yil": 1971}</pre></div>
+      <div class="out">Status: 200 OK
+
+{
+  "id": 2,
+  "baslik": "Tutunamayanlar",
+  "yazar": "Oğuz Atay",
+  "yil": 1971
+}</div>
+      <p>Aynı isteği <code>/kitaplar/99</code>'a gönderin: <code>404</code>, <code>{"hata": "kitap bulunamadı"}</code>. Gövdeden <code>baslik</code>'i çıkarıp <code>/kitaplar/2</code>'ye gönderin: <code>400</code>, <code>{"hata": "baslik zorunlu"}</code>.</p>
+      <p>Şimdi metodu <b>DELETE</b>, adresi <code>http://127.0.0.1:5000/kitaplar/1</code> yapın (gövde gerekmez):</p>
+      <div class="out">Status: 200 OK
+
+{
+  "mesaj": "kitap silindi"
+}</div>
+      <p>Aynı isteği bir kez daha gönderin: kitap artık yok, cevap <code>404</code>. <code>GET /kitaplar</code> artık iki eski kitabı ve sizin eklediklerinizi gösterir; 1 numara listede yoktur.</p>
+      <div class="note tip"><b>Test için ipucu:</b> DELETE'in 200 döndürmesi kitabın gerçekten silindiğini göstermez. Silindiğini anlamanın yolu, ardından <code>GET</code> ile o kitabı istemek ve 404 almaktır. Bir sonraki bölümde testler bunu yapıyor.</div>
+    </section>
+
+    <section class="step" id="db-test">
+      <div class="step-head"><span class="num">08</span><h2>Veritabanlı testler</h2></div>
+      <p class="time">15 dakika</p>
+      <p>Testler <code>kutuphane.db</code>'yi kullanırsa her test çalışmasında gerçek verileriniz silinir; <code>verileri_sifirla()</code> tabloyu baştan kuruyor. Bu yüzden testler <b>ayrı bir veritabanı dosyası</b> kullanmalı. Her test dosyasında <code>import</code> satırlarının hemen altına şu satırı ekleyin:</p>
+      <div class="cmd"><div class="cmd-bar">test_app.py ve test_sayfalar.py (import'ların altına)<button class="copy" type="button">Kopyala</button></div><pre>app.config["VERITABANI"] = "test.db"</pre></div>
+      <p>Testler artık <code>test.db</code>'ye yazar; <code>kutuphane.db</code>'ye hiç dokunmaz. <code>test_app.py</code>'ye PUT ve DELETE testlerini de ekleyince:</p>
+      <div class="cmd"><div class="cmd-bar">test_app.py<button class="copy" type="button">Kopyala</button></div><pre>from app import app, verileri_sifirla
+
+app.config["VERITABANI"] = "test.db"
+
+
+def test_kitap_listesi():
+    verileri_sifirla()
+    client = app.test_client()
+    yanit = client.get("/kitaplar")
+    assert yanit.status_code == 200
+    assert len(yanit.get_json()) == 3
+
+
+def test_olmayan_kitap_404():
+    verileri_sifirla()
+    client = app.test_client()
+    yanit = client.get("/kitaplar/99")
+    assert yanit.status_code == 404
+
+
+def test_kitap_ekle():
+    verileri_sifirla()
+    client = app.test_client()
+    kitap = {"baslik": "Beyaz Kale", "yazar": "Orhan Pamuk", "yil": 1985}
+    yanit = client.post("/kitaplar", json=kitap)
+    assert yanit.status_code == 201
+    assert yanit.get_json()["id"] == 4
+    assert client.get("/kitaplar/4").get_json()["baslik"] == "Beyaz Kale"
+
+
+def test_kitap_guncelle():
+    verileri_sifirla()
+    client = app.test_client()
+    yeni = {"baslik": "Tutunamayanlar", "yazar": "Oğuz Atay", "yil": 1971}
+    yanit = client.put("/kitaplar/2", json=yeni)
+    assert yanit.status_code == 200
+    assert client.get("/kitaplar/2").get_json()["yil"] == 1971
+
+
+def test_olmayan_kitabi_guncellemek_404():
+    verileri_sifirla()
+    client = app.test_client()
+    yanit = client.put("/kitaplar/99", json={"baslik": "Yok"})
+    assert yanit.status_code == 404
+
+
+def test_kitap_sil():
+    verileri_sifirla()
+    client = app.test_client()
+    yanit = client.delete("/kitaplar/1")
+    assert yanit.status_code == 200
+    assert client.get("/kitaplar/1").status_code == 404
+    assert len(client.get("/kitaplar").get_json()) == 2
+
+
+def test_olmayan_kitabi_silmek_404():
+    verileri_sifirla()
+    client = app.test_client()
+    yanit = client.delete("/kitaplar/99")
+    assert yanit.status_code == 404
+
+
+def test_ana_sayfa():
+    verileri_sifirla()
+    client = app.test_client()
+    html = client.get("/").get_data(as_text=True)
+    assert "Tutunamayanlar" in html</pre></div>
+      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest -v</pre></div>
+      <div class="out">test_app.py::test_kitap_listesi PASSED                                   [  8%]
+test_app.py::test_olmayan_kitap_404 PASSED                               [ 16%]
+test_app.py::test_kitap_ekle PASSED                                      [ 25%]
+test_app.py::test_kitap_guncelle PASSED                                  [ 33%]
+test_app.py::test_olmayan_kitabi_guncellemek_404 PASSED                  [ 41%]
+test_app.py::test_kitap_sil PASSED                                       [ 50%]
+test_app.py::test_olmayan_kitabi_silmek_404 PASSED                       [ 58%]
+test_app.py::test_ana_sayfa PASSED                                       [ 66%]
+test_sayfalar.py::test_ana_sayfa_kitaplari_listeler PASSED               [ 75%]
+test_sayfalar.py::test_kitap_sayfasi PASSED                              [ 83%]
+test_sayfalar.py::test_olmayan_kitap_sayfasi_404 PASSED                  [ 91%]
+test_sayfalar.py::test_basliktaki_html_kacislanir PASSED                 [100%]
+
+============================== 12 passed ==============================</div>
+      <ul class="plain">
+        <li>Testler <a href="#bagimsiz">3. bölümdekiyle</a> aynı kalıpta: her test <code>verileri_sifirla()</code> ile başlıyor. Fark yalnızca sıfırlananın artık bir liste değil, bir tablo olması.</li>
+        <li><code>test_kitap_ekle</code>, <code>test_kitap_guncelle</code> ve <code>test_kitap_sil</code> yalnızca durum koduna bakmıyor; ardından <code>GET</code> ile değişikliğin gerçekten kaydedildiğini de kontrol ediyor. <code>commit()</code> unutulsa ya da yanlış satır silinse bu kontroller yakalar.</li>
+        <li><code>test_sayfalar.py</code>'deki 4 test de aynı satır eklenince veritabanlı sürümde değişmeden geçiyor.</li>
+      </ul>
+      <div class="note tip"><b>test.db'yi GitHub'a göndermeyin.</b> Projelerinizde <code>.gitignore</code>'a <code>*.db</code> satırını ekleyin. Veritabanı dosyası kodun değil verinin parçasıdır.</div>
+    </section>
+
+    <section class="step" id="hatalar">
+      <div class="step-head"><span class="num">09</span><h2>Sık karşılaşılan hatalar</h2></div>
+      <p class="time">Başvuru bölümü</p>
+      <details class="err"><summary>jinja2.exceptions.TemplateNotFound: kitaplar.html</summary><div class="body"><p>Şablon bulunamadı. Klasörün adı tam olarak <code>templates</code> mı ve <code>app.py</code> ile aynı klasörde mi? Dosya adını <code>render_template</code>'teki ile karşılaştırın.</p></div></details>
+      <details class="err"><summary>sqlite3.OperationalError: no such table: kitaplar</summary><div class="body"><p>Tablo hiç oluşturulmamış. Testlerde her testin ilk satırı <code>verileri_sifirla()</code> mı? Sunucuda: <code>kutuphane.db</code> boş ya da bozuk kaldıysa dosyayı silip sunucuyu yeniden başlatın.</p></div></details>
+      <details class="err"><summary>Testleri çalıştırdım, eklediğim kitaplar gitti</summary><div class="body"><p>Testler <code>kutuphane.db</code>'yi kullanmış. <code>app.config["VERITABANI"] = "test.db"</code> satırı test dosyasında var mı? (<a href="#db-test">8. bölüm</a>)</p></div></details>
+      <details class="err"><summary>Ekleme 201 döndü ama kitap listede yok</summary><div class="body"><p><code>baglanti.commit()</code> unutulmuş: değişiklik kaydedilmeden bağlantı kapandı.</p></div></details>
+      <details class="err"><summary>sqlite3.OperationalError: database is locked</summary><div class="body"><p>Veritabanı dosyası başka bir yerde açık. Ya bir fonksiyon <code>baglanti.close()</code>'u atlıyor ya da dosya başka bir programda (ör. bir veritabanı görüntüleyicisinde) açık.</p></div></details>
+      <details class="err"><summary>405 Method Not Allowed (PUT ya da DELETE)</summary><div class="body"><p>Postman'de metot doğru seçilmemiş ya da adres yanlış: PUT ve DELETE <code>/kitaplar</code>'a değil <code>/kitaplar/2</code> gibi bir kitabın adresine gönderilir.</p></div></details>
+      <details class="err"><summary>Sayfada &amp;lt;b&amp;gt; gibi garip işaretler görünüyor</summary><div class="body"><p>Hata değil: başlıkta HTML işareti var ve Jinja onu güvenlik için kaçışladı (<a href="#sablon-test">5. bölüm</a>).</p></div></details>
+    </section>
+
+    <section class="step" id="deneyin">
+      <div class="step-head"><span class="num">10</span><h2>Kendinizi deneyin</h2></div>
+      <p class="time">İsteğe bağlı, 10–15'er dakika</p>
+      <div class="note tip"><b>Bu hafta repoya alıştırma eklenmedi.</b> Aşağıdakiler konuyu pekiştirmek için; projenizde de işinize yarayacak.</div>
+
+      <h3>1. Yeni kural: önce test, sonra kod</h3>
+      <p>Yeni kural: “POST'ta yıl verilirse 1 veya daha büyük olmalı; değilse <code>400</code> ve <code>{"hata": "yil pozitif olmalı"}</code>. Yıl hiç verilmezse kitap yine eklenir.” Bu kez sırayı değiştirin: <b>önce testi yazın</b>, kırmızı olduğunu görün, sonra kodu yazıp yeşile döndürün. Sınır değerlerini unutmayın.</p>
+      <details class="err"><summary>Çözümü göster</summary><div class="body"><div class="cmd"><div class="cmd-bar">test_alistirma.py<button class="copy" type="button">Kopyala</button></div><pre>import pytest
+
+from app import app, verileri_sifirla
+
+app.config["VERITABANI"] = "test.db"
+
+
+@pytest.mark.parametrize("yil", [0, -5], ids=["sifir", "negatif"])
+def test_gecersiz_yil_400(yil):
+    verileri_sifirla()
+    client = app.test_client()
+    yanit = client.post("/kitaplar", json={"baslik": "Beyaz Kale", "yil": yil})
+    assert yanit.status_code == 400
+    assert yanit.get_json() == {"hata": "yil pozitif olmalı"}
+
+
+@pytest.mark.parametrize(
+    "govde",
+    [{"baslik": "Beyaz Kale", "yil": 1}, {"baslik": "Beyaz Kale"}],
+    ids=["yil bir", "yil yok"],
+)
+def test_gecerli_yil_201(govde):
+    verileri_sifirla()
+    client = app.test_client()
+    yanit = client.post("/kitaplar", json=govde)
+    assert yanit.status_code == 201</pre></div><p>Kod değişmeden önce:</p><div class="out">FAILED test_alistirma.py::test_gecersiz_yil_400[sifir] - assert 201 == 400
+FAILED test_alistirma.py::test_gecersiz_yil_400[negatif] - assert 201 == 400</div><p><code>kitap_ekle</code>'de başlık kontrolünün altına:</p><div class="cmd"><div class="cmd-bar">app.py (kitap_ekle)<button class="copy" type="button">Kopyala</button></div><pre>def kitap_ekle():
+    veri = request.get_json(silent=True)
+    if not veri or not veri.get("baslik"):
+        return {"hata": "baslik zorunlu"}, 400
+    yil = veri.get("yil")
+    if yil is not None and yil &lt; 1:
+        return {"hata": "yil pozitif olmalı"}, 400
+    baglanti = baglan()
+    imlec = baglanti.execute(
+        "INSERT INTO kitaplar (baslik, yazar, yil) VALUES (?, ?, ?)",
+        (veri["baslik"], veri.get("yazar", ""), veri.get("yil")),
+    )
+    baglanti.commit()
+    yeni_id = imlec.lastrowid
+    baglanti.close()
+    return kitap_bul(yeni_id), 201</pre></div><div class="out">4 passed</div><p><code>(1, 201)</code> ve <code>(0, 400)</code> sınırın iki yanı. Önce testi yazıp kırmızıyı görmenin adı <b>test güdümlü geliştirme</b> (TDD).</p></div></details>
+
+      <h3>2. Boş liste sayfası</h3>
+      <p><code>kitaplar.html</code>'deki <code>{% else %}</code> dalı hiç denenmedi: liste boşken sayfada “Henüz kitap yok.” yazmalı. Bunu kontrol eden bir test yazın. İpucu: önce üç kitabı da DELETE ile silin.</p>
+      <details class="err"><summary>Çözümü göster</summary><div class="body"><div class="cmd"><div class="cmd-bar">test_sayfalar.py (ekleyin)<button class="copy" type="button">Kopyala</button></div><pre>def test_kitap_kalmayinca_mesaj():
+    verileri_sifirla()
+    client = app.test_client()
+    for kitap_id in [1, 2, 3]:
+        client.delete(f"/kitaplar/{kitap_id}")
+    html = client.get("/").get_data(as_text=True)
+    assert "Henüz kitap yok." in html</pre></div><div class="out">1 passed</div><p>Boş liste, 101'den beri sınır değeri olarak gördüğümüz durumun sayfadaki karşılığı.</p></div></details>
+    </section>
+
+  </main>
+</div>
+
+<footer>Yazılım Kalite Güvencesi ve Testi · Flask 102. Örneklerin tamamı Flask 3.1, Jinja2 3.1, Python ile gelen SQLite, pytest 9 ve ruff 0.17 ile çalıştırılarak doğrulanmıştır.</footer>
+
+<script>
+(function(){
+  document.querySelectorAll(".copy").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var pre=btn.closest(".cmd").querySelector("pre");
+      var text=pre.innerText;
+      function done(msg){btn.textContent=msg;setTimeout(function(){btn.textContent="Kopyala"},1600)}
+      function fallback(){var r=document.createRange();r.selectNodeContents(pre);var s=getSelection();s.removeAllRanges();s.addRange(r);done("Seçildi, Ctrl+C")}
+      try{navigator.clipboard.writeText(text).then(function(){done("Kopyalandı")},fallback)}catch(e){fallback()}
+    });
+  });
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'))});
+  function spy(){
+    var y=window.scrollY+120, cur=0;
+    secs.forEach(function(s,i){if(s&&s.offsetTop<=y)cur=i});
+    links.forEach(function(a,i){a.classList.toggle('active',i===cur)});
+  }
+  window.addEventListener('scroll',spy,{passive:true}); spy();
+})();
+</script>
+</body>
+</html>

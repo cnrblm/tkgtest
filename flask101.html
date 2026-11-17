@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Flask 101</title>
-<meta name="description" content="Yazılım Kalite Güvencesi ve Testi dersi için Flask 101: HTTP, JSON, ilk Flask API'si, route'lar, POST, test istemcisiyle API testi ve test bağımsızlığı.">
+<meta name="description" content="Yazılım Kalite Güvencesi ve Testi dersi için Flask 101: HTTP, JSON, ilk Flask API'si, route'lar, sorgu parametresi ve POST.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
@@ -141,9 +141,9 @@ html{scroll-behavior:smooth}
 <a class="home-btn" href="index.html">← Ana sayfa</a>
 <header class="top">
   <p class="course">Yazılım Kalite Güvencesi ve Testi · 7. hafta</p>
-  <h1>Flask 101: ilk web API'si ve testi</h1>
-  <p class="lede">Şimdiye kadar fonksiyonları test ettik. Bu hafta küçük bir <b>web API'si</b> yazıyoruz: tarayıcıdan ya da başka bir programdan gelen isteklere JSON ile cevap veren bir kütüphane uygulaması. Sonra bu API'yi, bildiğimiz pytest araçlarıyla test ediyoruz. Örnekleri sırayla kendi bilgisayarınızda çalıştırın.</p>
-  <div class="meta"><span>Süre: <b>2 saat, bölüm bölüm</b></span><span>Gerekenler: <b>pytest 102, Postman</b></span></div>
+  <h1>Flask 101: ilk web API'si</h1>
+  <p class="lede">Şimdiye kadar fonksiyonları test ettik. Bu hafta küçük bir <b>web API'si</b> yazıyoruz: tarayıcıdan ya da başka bir programdan gelen isteklere JSON ile cevap veren bir kütüphane uygulaması. API'yi Postman ile deneyeceğiz; pytest ile test etmeyi Flask 102'de göreceğiz. Örnekleri sırayla kendi bilgisayarınızda çalıştırın.</p>
+  <div class="meta"><span>Süre: <b>1,5 saat, bölüm bölüm</b></span><span>Gerekenler: <b>pytest 102, Postman</b></span></div>
 </header>
 
 <div class="wrap">
@@ -157,8 +157,6 @@ html{scroll-behavior:smooth}
       <li><a href="#route">Route'lar ve 404</a></li>
       <li><a href="#sorgu">Sorgu parametresi</a></li>
       <li><a href="#post">POST ile veri eklemek</a></li>
-      <li><a href="#istemci">Test istemcisi</a></li>
-      <li><a href="#bagimsiz">Testler birbirini etkilememeli</a></li>
       <li><a href="#hatalar">Sık hatalar</a></li>
       <li><a href="#deneyin">Kendinizi deneyin</a></li>
     </ol>
@@ -433,205 +431,29 @@ def kitap_ekle():
   "hata": "baslik zorunlu"
 }</div>
       <p><b>JSON</b>'u seçmek, isteğe <code>Content-Type: application/json</code> başlığını ekler (istekteki <b>Headers</b> sekmesinde görebilirsiniz). Flask, gövdenin JSON olduğunu bu başlıktan anlar.</p>
-      <p>Şimdi tarayıcıda <code>/kitaplar</code>'ı yenileyin: Beyaz Kale listede, 4 kitap var. Sunucuyu durdurup yeniden başlatın ve tekrar bakın: yine 3 kitap. Kitaplar yalnızca bellekteki bir listede duruyor; sunucu kapanınca eklenenler kaybolur. Kalıcı olması için bir veritabanı gerekir, onu bu derste kullanmayacağız.</p>
-    </section>
-
-    <section class="step" id="istemci">
-      <div class="step-head"><span class="num">08</span><h2>Test istemcisi</h2></div>
-      <p class="time">20 dakika</p>
-      <p>Her değişiklikten sonra Postman'de istekleri tek tek gönderip yanıtlara gözle bakmak, pytest öncesi <code>print</code> ile test etmeye benziyor. Flask'ın <b>test istemcisi</b>, sunucu çalıştırmadan uygulamaya istek gönderir. Böylece API testleri de sıradan pytest testleri olur:</p>
-      <div class="cmd"><div class="cmd-bar">test_app.py<button class="copy" type="button">Kopyala</button></div><pre>from app import app
-
-
-def test_kitap_listesi():
-    client = app.test_client()
-    yanit = client.get("/kitaplar")
-    assert yanit.status_code == 200
-    assert len(yanit.get_json()) == 3
-
-
-def test_kitap_getir():
-    client = app.test_client()
-    yanit = client.get("/kitaplar/2")
-    assert yanit.status_code == 200
-    assert yanit.get_json()["baslik"] == "Tutunamayanlar"
-
-
-def test_olmayan_kitap_404():
-    client = app.test_client()
-    yanit = client.get("/kitaplar/99")
-    assert yanit.status_code == 404
-    assert yanit.get_json() == {"hata": "kitap bulunamadı"}</pre></div>
-      <div class="cmd"><div class="cmd-bar">Terminal<button class="copy" type="button">Kopyala</button></div><pre>python -m pytest test_app.py -v</pre></div>
-      <div class="out">test_app.py::test_kitap_listesi PASSED                                   [ 33%]
-test_app.py::test_kitap_getir PASSED                                     [ 66%]
-test_app.py::test_olmayan_kitap_404 PASSED                               [100%]
-
-============================== 3 passed</div>
-      <div class="tbl"><table class="levels">
-        <thead><tr><th>Yazılan</th><th>Anlamı</th></tr></thead>
-        <tbody>
-          <tr><td><code>client = app.test_client()</code></td><td>Uygulamaya istek gönderecek sahte bir istemci.</td></tr>
-          <tr><td><code>client.get("/kitaplar/2")</code></td><td>GET isteği gönderir, yanıtı döndürür.</td></tr>
-          <tr><td><code>client.post("/kitaplar", json={...})</code></td><td>POST isteği; sözlük JSON olarak gövdeye konur.</td></tr>
-          <tr><td><code>yanit.status_code</code></td><td>Durum kodu: <code>200</code>, <code>404</code>…</td></tr>
-          <tr><td><code>yanit.get_json()</code></td><td>Yanıt gövdesi, sözlük ya da liste olarak.</td></tr>
-        </tbody>
-      </table></div>
-      <p>Testler çalışırken sunucunun açık olması gerekmez; test istemcisi uygulamayı doğrudan çağırır. <code>from app import app</code> satırı sunucuyu başlatmaz, çünkü <code>app.run</code> <code>if __name__ == "__main__":</code> bloğunun içinde.</p>
-      <p>Test, pytest 101'deki AAA düzeninde: <b>hazırla</b> (istemci), <b>çalıştır</b> (istek), <b>kontrol et</b> (durum kodu ve gövde). Her ikisini de kontrol edin: doğru kod ama yanlış veri de bir hatadır.</p>
-    </section>
-
-    <section class="step" id="bagimsiz">
-      <div class="step-head"><span class="num">09</span><h2>Testler birbirini etkilememeli</h2></div>
-      <p class="time">10 dakika</p>
-      <p><code>test_app.py</code>'nin <b>sonuna</b> bir POST testi ekleyin:</p>
-      <div class="cmd"><div class="cmd-bar">test_app.py (sona ekleyin)<button class="copy" type="button">Kopyala</button></div><pre>def test_kitap_ekle():
-    client = app.test_client()
-    kitap = {"baslik": "Beyaz Kale", "yazar": "Orhan Pamuk", "yil": 1985}
-    yanit = client.post("/kitaplar", json=kitap)
-    assert yanit.status_code == 201
-    assert yanit.get_json()["id"] == 4</pre></div>
-      <div class="out">4 passed</div>
-      <p>Hepsi geçti. Şimdi aynı testi kesip dosyanın <b>en üstüne</b>, <code>import</code> satırının hemen altına taşıyın ve yeniden çalıştırın:</p>
-      <div class="out">    def test_kitap_listesi():
-        client = app.test_client()
-        yanit = client.get("/kitaplar")
-        assert yanit.status_code == 200
-&gt;       assert len(yanit.get_json()) == 3
-E       AssertionError: assert 4 == 3
-...
-test_app.py:16: AssertionError
-...
-FAILED test_app.py::test_kitap_listesi - AssertionError: assert 4 == 3
-========================= 1 failed, 3 passed</div>
-      <p>Kodda bir değişiklik yok, yalnızca testlerin sırası değişti. POST testi listeye Beyaz Kale'yi ekledi ve kitap, aynı test çalışması boyunca listede kaldı. Sonraki test 3 değil 4 kitap buldu. Bir testin sonucu başka bir testin önce çalışıp çalışmadığına bağlıysa testler <b>bağımsız</b> değildir. Böyle testler bazen geçer bazen kalır, ve bunun nedenini bulmak zordur.</p>
-      <p>Çözüm: her test, verileri <b>başlangıç hâline</b> getirerek başlasın. <code>app.py</code>'nin son hâli (bütün dosyayı bununla değiştirin):</p>
-      <div class="cmd"><div class="cmd-bar">app.py<button class="copy" type="button">Kopyala</button></div><pre>from flask import Flask, request
-
-app = Flask(__name__)
-app.json.ensure_ascii = False
-app.json.sort_keys = False
-
-BASLANGIC_KITAPLARI = [
-    {"id": 1, "baslik": "Kürk Mantolu Madonna", "yazar": "Sabahattin Ali", "yil": 1943},
-    {"id": 2, "baslik": "Tutunamayanlar", "yazar": "Oğuz Atay", "yil": 1972},
-    {"id": 3, "baslik": "Kuyucaklı Yusuf", "yazar": "Sabahattin Ali", "yil": 1937},
-]
-kitaplar = []
-
-
-def verileri_sifirla():
-    kitaplar.clear()
-    for kitap in BASLANGIC_KITAPLARI:
-        kitaplar.append(dict(kitap))
-
-
-verileri_sifirla()
-
-
-@app.get("/kitaplar")
-def kitap_listesi():
-    yazar = request.args.get("yazar")
-    if yazar is None:
-        return kitaplar
-    sonuc = []
-    for kitap in kitaplar:
-        if yazar.lower() in kitap["yazar"].lower():
-            sonuc.append(kitap)
-    return sonuc
-
-
-@app.get("/kitaplar/&lt;int:kitap_id&gt;")
-def kitap_getir(kitap_id):
-    for kitap in kitaplar:
-        if kitap["id"] == kitap_id:
-            return kitap
-    return {"hata": "kitap bulunamadı"}, 404
-
-
-@app.post("/kitaplar")
-def kitap_ekle():
-    veri = request.get_json(silent=True)
-    if not veri or not veri.get("baslik"):
-        return {"hata": "baslik zorunlu"}, 400
-    kitap = {
-        "id": len(kitaplar) + 1,
-        "baslik": veri["baslik"],
-        "yazar": veri.get("yazar", ""),
-        "yil": veri.get("yil"),
-    }
-    kitaplar.append(kitap)
-    return kitap, 201
-
-
-if __name__ == "__main__":
-    app.run(debug=True)</pre></div>
-      <ul class="plain">
-        <li><code>BASLANGIC_KITAPLARI</code> hiç değişmeyen ilk veridir. Adı büyük harfle, çünkü PEP 8'e göre sabit (Statik Test 101).</li>
-        <li><code>verileri_sifirla()</code> listeyi boşaltır (<code>clear</code>) ve başlangıç kitaplarını yeniden doldurur. <code>dict(kitap)</code> kitabın bir kopyasını ekler; böylece bir test bir kitabı değiştirse bile başlangıç verisi bozulmaz.</li>
-        <li>Dosya ilk çalıştığında da bir kez çağrılır; sunucu yine 3 kitapla açılır.</li>
-      </ul>
-      <p><code>test_app.py</code>'de her testin ilk satırı artık sıfırlama:</p>
-      <div class="cmd"><div class="cmd-bar">test_app.py<button class="copy" type="button">Kopyala</button></div><pre>from app import app, verileri_sifirla
-
-
-def test_kitap_ekle():
-    verileri_sifirla()
-    client = app.test_client()
-    kitap = {"baslik": "Beyaz Kale", "yazar": "Orhan Pamuk", "yil": 1985}
-    yanit = client.post("/kitaplar", json=kitap)
-    assert yanit.status_code == 201
-    assert yanit.get_json()["id"] == 4
-
-
-def test_kitap_listesi():
-    verileri_sifirla()
-    client = app.test_client()
-    yanit = client.get("/kitaplar")
-    assert yanit.status_code == 200
-    assert len(yanit.get_json()) == 3
-
-
-def test_kitap_getir():
-    verileri_sifirla()
-    client = app.test_client()
-    yanit = client.get("/kitaplar/2")
-    assert yanit.status_code == 200
-    assert yanit.get_json()["baslik"] == "Tutunamayanlar"
-
-
-def test_olmayan_kitap_404():
-    verileri_sifirla()
-    client = app.test_client()
-    yanit = client.get("/kitaplar/99")
-    assert yanit.status_code == 404
-    assert yanit.get_json() == {"hata": "kitap bulunamadı"}</pre></div>
-      <div class="out">4 passed</div>
-      <p>Testler artık hangi sırada çalışırsa çalışsın aynı sonucu verir. Her testin başında aynı satırı yazmak tekrar gibi görünüyor; ileride bunu otomatik yapmanın yolunu göreceğiz.</p>
+      <p>Şimdi tarayıcıda <code>/kitaplar</code>'ı yenileyin: Beyaz Kale listede, 4 kitap var. Sunucuyu durdurup yeniden başlatın ve tekrar bakın: yine 3 kitap. Kitaplar yalnızca bellekteki bir listede duruyor; sunucu kapanınca eklenenler kaybolur. Kalıcı olması için bir veritabanı gerekir; onu Flask 102'de ekleyeceğiz.</p>
     </section>
 
     <section class="step" id="hatalar">
-      <div class="step-head"><span class="num">10</span><h2>Sık karşılaşılan hatalar</h2></div>
+      <div class="step-head"><span class="num">08</span><h2>Sık karşılaşılan hatalar</h2></div>
       <p class="time">Başvuru bölümü</p>
       <details class="err"><summary>ModuleNotFoundError: No module named 'flask'</summary><div class="body"><p>Flask kurulu değil ya da başka bir Python'a kurulu. <code>python -m pip install flask</code>; aynı terminalde <code>python app.py</code>.</p></div></details>
       <details class="err"><summary>Address already in use / Port 5000 is in use by another program</summary><div class="body"><p>Çoğu zaman başka bir terminalde sunucu zaten çalışıyor; o terminalde <kbd>Ctrl</kbd>+<kbd>C</kbd> yapın. macOS'ta AirPlay Alıcısı da bu portu kullanabilir: <b>Sistem Ayarları</b>'nda “AirPlay Alıcısı”nı kapatın ya da son satırı <code>app.run(debug=True, port=5001)</code> yapıp adreslerde 5001 kullanın.</p></div></details>
       <details class="err"><summary>macOS: localhost:5000 açınca 403 Forbidden</summary><div class="body"><p>İstek Flask'a değil AirPlay'e gitti. Tarayıcıda da Postman'de de <code>http://127.0.0.1:5000</code> yazın.</p></div></details>
       <details class="err"><summary>404 Not Found (Flask'ın HTML sayfası)</summary><div class="body"><p>Adres hiçbir route'a uymadı. Yazımı kontrol edin: <code>/kitaplar/</code> (sondaki <code>/</code>) ve <code>/kitaplar/abc</code> (sayı değil) uymaz. Bizim yazdığımız 404 ise JSON döner: <code>{"hata": "kitap bulunamadı"}</code>.</p></div></details>
       <details class="err"><summary>405 Method Not Allowed</summary><div class="body"><p>Adres var ama o metot için route yok. Örneğin <code>/kitaplar/1</code>'e DELETE ya da <code>/</code>'e POST. Tarayıcının adres çubuğu her zaman GET gönderir; POST'u Postman'de ya da testte deneyin. Postman'de metodu doğru seçtiğinizden emin olun.</p></div></details>
-      <details class="err"><summary>Başlığı gönderdiğim hâlde 400 baslik zorunlu</summary><div class="body"><p>Postman'de <b>Body → raw</b> seçili ama yanındaki listede <b>JSON</b> yerine <b>Text</b> kalmış. O zaman <code>Content-Type: application/json</code> başlığı gönderilmez, gövde JSON sayılmaz ve <code>get_json(silent=True)</code> <code>None</code> döner. Testte <code>client.post(..., json={...})</code> yazarsanız başlık kendiliğinden eklenir.</p></div></details>
+      <details class="err"><summary>Başlığı gönderdiğim hâlde 400 baslik zorunlu</summary><div class="body"><p>Postman'de <b>Body → raw</b> seçili ama yanındaki listede <b>JSON</b> yerine <b>Text</b> kalmış. O zaman <code>Content-Type: application/json</code> başlığı gönderilmez, gövde JSON sayılmaz ve <code>get_json(silent=True)</code> <code>None</code> döner.</p></div></details>
       <details class="err"><summary>Postman: connect ECONNREFUSED 127.0.0.1:5000</summary><div class="body"><p>Sunucu çalışmıyor. <code>python app.py</code> çalışan terminal açık mı? <kbd>Ctrl</kbd>+<kbd>C</kbd> ile durdurduysanız ya da kodda bir hata yüzünden kapandıysa yeniden başlatın.</p></div></details>
-      <details class="err"><summary>Testler bazen geçiyor bazen kalıyor</summary><div class="body"><p>Bir test başka bir testin eklediği veriyi görüyor. Her testin başında <code>verileri_sifirla()</code> var mı? (<a href="#bagimsiz">9. bölüm</a>)</p></div></details>
       <details class="err"><summary>Türkçe harfler &#92;u00fc gibi görünüyor</summary><div class="body"><p><code>app.json.ensure_ascii = False</code> satırı eksik. Bu satır yoksa da JSON doğrudur; yalnızca okuması zordur.</p></div></details>
     </section>
 
     <section class="step" id="deneyin">
-      <div class="step-head"><span class="num">11</span><h2>Kendinizi deneyin</h2></div>
-      <p class="time">İsteğe bağlı, 10'ar dakika</p>
+      <div class="step-head"><span class="num">09</span><h2>Kendinizi deneyin</h2></div>
+      <p class="time">İsteğe bağlı, 10 dakika</p>
       <div class="note tip"><b>Bu hafta repoya alıştırma eklenmedi.</b> Vaktinizi ara sınava hazırlanmaya ayırın. Aşağıdakiler isteğe bağlı; Flask'ı anlayıp anlamadığınızı görmek için.</div>
 
       <h3>1. Durum kodunu tahmin edin</h3>
-      <p><a href="#bagimsiz">9. bölümdeki</a> uygulamaya şu istekler gönderiliyor. Her biri için durum kodunu tahmin edin, sonra Postman ile ya da test istemcisiyle deneyin.</p>
+      <p><a href="#post">7. bölümdeki</a> uygulamaya şu istekler gönderiliyor. Her biri için durum kodunu tahmin edin, sonra Postman ile deneyin.</p>
       <div class="tbl"><table class="levels">
         <thead><tr><th>İstek</th><th>Gövde</th></tr></thead>
         <tbody>
@@ -656,43 +478,6 @@ def test_olmayan_kitap_404():
           <tr><td><code>DELETE /kitaplar/1</code></td><td><code>405</code></td><td>Adres var ama DELETE için route yok.</td></tr>
         </tbody>
       </table></div></div></details>
-
-      <h3>2. Yeni kural: önce test, sonra kod</h3>
-      <p>Yeni kural: “Yıl verilirse 1 veya daha büyük olmalı; değilse <code>400</code> ve <code>{"hata": "yil pozitif olmalı"}</code>. Yıl hiç verilmezse kitap yine eklenir.” Bu kez sırayı değiştirin: <b>önce testi yazın</b>, kırmızı olduğunu görün, sonra kodu yazıp yeşile döndürün. Sınır değerlerini (pytest 101) unutmayın; birden fazla değeri denemek için parametrize işinize yarar (<code>test_app.py</code>'nin en üstüne <code>import pytest</code> ekleyin).</p>
-      <details class="err"><summary>Çözümü göster</summary><div class="body"><div class="cmd"><div class="cmd-bar">test_app.py (ekleyin)<button class="copy" type="button">Kopyala</button></div><pre>@pytest.mark.parametrize("yil", [0, -5], ids=["sifir", "negatif"])
-def test_gecersiz_yil_400(yil):
-    verileri_sifirla()
-    client = app.test_client()
-    yanit = client.post("/kitaplar", json={"baslik": "Beyaz Kale", "yil": yil})
-    assert yanit.status_code == 400
-    assert yanit.get_json() == {"hata": "yil pozitif olmalı"}
-
-
-@pytest.mark.parametrize(
-    "govde",
-    [{"baslik": "Beyaz Kale", "yil": 1}, {"baslik": "Beyaz Kale"}],
-    ids=["yil bir", "yil yok"],
-)
-def test_gecerli_yil_201(govde):
-    verileri_sifirla()
-    client = app.test_client()
-    yanit = client.post("/kitaplar", json=govde)
-    assert yanit.status_code == 201</pre></div><p>Kod değişmeden önce:</p><div class="out">FAILED test_app.py::test_gecersiz_yil_400[sifir] - assert 201 == 400
-FAILED test_app.py::test_gecersiz_yil_400[negatif] - assert 201 == 400</div><p><code>kitap_ekle</code>'de başlık kontrolünün altına:</p><div class="cmd"><div class="cmd-bar">app.py (kitap_ekle)<button class="copy" type="button">Kopyala</button></div><pre>def kitap_ekle():
-    veri = request.get_json(silent=True)
-    if not veri or not veri.get("baslik"):
-        return {"hata": "baslik zorunlu"}, 400
-    yil = veri.get("yil")
-    if yil is not None and yil &lt; 1:
-        return {"hata": "yil pozitif olmalı"}, 400
-    kitap = {
-        "id": len(kitaplar) + 1,
-        "baslik": veri["baslik"],
-        "yazar": veri.get("yazar", ""),
-        "yil": yil,
-    }
-    kitaplar.append(kitap)
-    return kitap, 201</pre></div><div class="out">8 passed</div><p><code>(1, 201)</code> ve <code>(0, 400)</code> sınırın iki yanı; <code>&lt; 1</code> yerine <code>&lt;= 1</code> yazılmış bir hatayı <code>yil bir</code> testi yakalar. Önce testi yazıp kırmızıyı görmenin adı <b>test güdümlü geliştirme</b> (TDD); ilerideki haftalarda geri döneceğiz.</p></div></details>
     </section>
 
   </main>
